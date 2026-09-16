@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- BUILD:CONTENT-START -->
+<title>Suspectra</title>
+<meta name="color-scheme" content="dark">
+<style>
+/* Suspectra
+ *
+ * Same design brief as Sonokinetic, in a dark ground: a lab instrument that
+ * could sit open on a desk during a meeting. Neutral surfaces, near-white
+ * text, one ink accent, plain typographic hierarchy. Monospace is reserved
+ * for numbers, where tabular alignment does actual work. Color on the page
+ * belongs to the notes; the chrome around them stays grey.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --paper:     #161513;
+  --card:      #1d1c1a;
+  --sunken:    #242220;
+  --rule:      #36332e;
+  --rule-soft: #2b2926;
+
+  --ink:       #e9e6e0;
+  --ink-2:     #b6b1a8;
+  --ink-3:     #8e897f;
+
+  --accent:    #86b3cc;
+  --accent-w:  #1f2a31;
+  --accent-ink:#11181c;
+  --accent-fill: rgba(134, 179, 204, 0.12);
+  --ok:        #8cbf9e;
+  --flag:      #e0705c;
+
+  /* canvases */
+  --grid:        #282623;
+  --grid-strong: #3b3833;
+  --ghost:       #6e695f;
+
+  /* keyboard and note hues */
+  --key-white: #d6d3cc;
+  --key-black: #0e0d0c;
+  --note-s: 42%;
+  --note-l: 66%;
+
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  --r: 3px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.55 var(--sans);
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 17px; }
+h2 { font-size: 14px; }
+
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.grow { flex: 1; }
+
+/* ---- header ---------------------------------------------------------- */
+
+header {
+  display: flex; align-items: baseline; gap: 6px 14px; flex-wrap: wrap;
+  padding: 12px 22px;
+  background: var(--card);
+  border-bottom: 1px solid var(--rule);
+}
+header .sub {
+  color: var(--ink-3); font-size: 12.5px;
+  font-family: var(--serif); font-style: italic;
+}
+.byline {
+  margin-left: auto; color: var(--ink-3); font-size: 11.5px;
+  font-family: var(--serif); font-style: italic;
+}
+
+/* ---- controls -------------------------------------------------------- */
+
+button, select {
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 4px 11px; font: inherit; font-size: 13px; cursor: pointer;
+  white-space: nowrap;
+}
+button:hover { border-color: var(--ink-3); background: var(--sunken); }
+button:active { background: var(--rule-soft); }
+button.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+  font-weight: 500;
+}
+button.primary:hover { background: #9cc2d7; border-color: #9cc2d7; }
+button.primary[aria-pressed="true"] {
+  background: var(--accent-w); border-color: var(--accent); color: var(--accent);
+}
+select { padding: 3px 6px; width: 100%; }
+select:focus { outline: 2px solid var(--accent-w); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, .key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[type=range] { accent-color: var(--accent); width: 100%; margin: 4px 0 0; padding: 0; }
+
+/* ---- layout ---------------------------------------------------------- */
+
+.page {
+  max-width: 1400px;
+  padding: 18px 22px 60px;
+  display: grid;
+  gap: 16px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  min-width: 0;
+}
+.cardhead .hint { margin: 0; }
+.cardhead {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin: -2px 0 6px;
+}
+.hint { color: var(--ink-2); font-size: 12.5px; margin: 0 0 10px; max-width: 80ch; }
+canvas { display: block; width: 100%; }
+#spectrum { height: 280px; }
+#curve { height: 180px; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+.lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) {
+  .main, .lower { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- readouts -------------------------------------------------------- */
+
+.readouts {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px;
+  padding: 10px 16px;
+}
+.readout { display: flex; align-items: baseline; gap: 8px; }
+.readout .label { color: var(--ink-3); font-size: 12.5px; }
+.readout .value { font: 13px var(--mono); font-variant-numeric: tabular-nums; }
+.readout .pct { color: var(--accent); margin-left: 6px; }
+
+/* ---- sliders --------------------------------------------------------- */
+
+.bars { display: grid; gap: 14px; align-content: start; }
+.bar > label { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 13px; }
+.bar output { font: 12.5px var(--mono); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bar small { display: block; color: var(--ink-3); font-size: 12px; line-height: 1.4; margin-top: 1px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 .bar > label { margin-bottom: 4px; }
+
+.seg {
+  display: flex; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden;
+}
+.seg label {
+  flex: 1; text-align: center; padding: 3px 4px; cursor: pointer;
+  font-size: 13px; color: var(--ink-2); background: var(--card);
+}
+.seg label + label { border-left: 1px solid var(--rule); }
+.seg label:hover { background: var(--sunken); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---- keyboard -------------------------------------------------------- */
+
+.kbtools { margin-left: auto; }
+.kbwrap { overflow-x: auto; }
+#keyboard {
+  --whites: 15;
+  position: relative;
+  display: flex;
+  height: 150px;
+  min-width: 520px;
+  user-select: none;
+  touch-action: manipulation;
+}
+.key { border: 1px solid var(--key-black); padding: 0; cursor: pointer; }
+.key.white {
+  flex: 1;
+  background: var(--key-white);
+  border-radius: 0 0 var(--r) var(--r);
+  margin-right: -1px;
+  position: relative;
+  box-shadow: inset 0 -8px 0 var(--note);
+}
+.key.white:last-child { margin-right: 0; }
+.key.white:hover { background: #e2dfd9; }
+.key.white span {
+  position: absolute; bottom: 14px; left: 0; right: 0;
+  text-align: center; font: 11px var(--mono); color: #5c5850;
+}
+.key.black {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  width: calc(100% / var(--whites) * 0.6);
+  left: calc(100% / var(--whites) * var(--pos) - (100% / var(--whites) * 0.3));
+  height: 60%;
+  background: var(--key-black);
+  border-color: var(--key-black);
+  border-radius: 0 0 var(--r) var(--r);
+  box-shadow: inset 0 -6px 0 var(--note);
+}
+.key.black:hover { background: #26241f; }
+.key[aria-pressed="true"].white { background: color-mix(in srgb, var(--note) 30%, var(--key-white)); }
+.key[aria-pressed="true"].black { background: color-mix(in srgb, var(--note) 40%, var(--key-black)); }
+
+.midi {
+  margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  color: var(--ink-3); font-size: 12.5px;
+}
+.midi label { color: var(--ink-2); }
+.midi select { width: auto; }
+
+/* ---- your code ------------------------------------------------------- */
+
+.chips { display: grid; gap: 6px; margin-bottom: 10px; }
+.chip {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border-radius: var(--r);
+  border: 1px solid var(--rule); background: var(--sunken);
+}
+.chip code { font: 12.5px var(--mono); }
+.chip span { color: var(--ink-3); font: 12px var(--mono); text-align: right; }
+.chip[data-state="ok"] span { color: var(--ok); }
+.chip[data-state="bad"] { border-color: var(--flag); }
+.chip[data-state="bad"] span { color: var(--flag); }
+
+#checks { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+#checks li { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.4; color: var(--ink-2); }
+#checks .mark { width: 14px; flex: none; font-family: var(--mono); }
+#checks b { font: 11.5px var(--mono); font-weight: 400; color: var(--ink-3); margin-right: 4px; }
+#checks em { display: block; font-style: normal; color: var(--flag); }
+#checks li[data-status="pass"] .mark { color: var(--ok); }
+#checks li[data-status="fail"] .mark { color: var(--flag); }
+#checks li[data-status="waiting"] { color: var(--ink-3); }
+
+@media (max-width: 480px) {
+  header, .page { padding-inline: 16px; }
+  .byline { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+<!-- BUILD:HEAD-END -->
+</head>
+<body>
+<header>
+  <h1>Suspectra</h1>
+  <span class="sub">Can chord-aware overtone adaptation make 12-TET chords measurably smoother?</span>
+  <span class="byline">Jonas Techmanski</span>
+</header>
+
+<main class="page">
+  <section class="card readouts" aria-live="polite" aria-label="Current chord">
+    <button type="button" class="primary" id="soundBtn" aria-pressed="false">Start sound</button>
+    <div class="readout"><span class="label">Chord</span><span class="value" id="chordOut">–</span></div>
+    <div class="readout"><span class="label">Roughness</span><span class="value"><span id="roughOut">–</span><span class="pct" id="roughPct"></span></span></div>
+    <div class="readout"><span class="label">Largest shift</span><span class="value" id="shiftOut">0¢</span></div>
+  </section>
+
+  <div class="main">
+    <section class="card" aria-labelledby="specTitle">
+      <div class="cardhead"><h2 id="specTitle">Overtones</h2></div>
+      <p class="hint">Each line is a partial, colored by note. Neighbors on the circle of fifths share hues. Dotted ghosts mark where a partial would sit on the harmonic series.</p>
+      <canvas id="spectrum" role="img" aria-label="Spectrum of the sounding partials on a log-frequency axis"></canvas>
+    </section>
+
+    <section class="card bars" aria-label="Controls">
+      <div class="bar">
+        <label for="consonance">Consonance <output id="consonanceVal"></output></label>
+        <input type="range" id="consonance" min="0" max="100" step="1">
+        <small>0 is the base instrument, 100 is the optimizer's best arrangement</small>
+      </div>
+      <div class="bar">
+        <label for="glide">Glide <output id="glideVal"></output></label>
+        <input type="range" id="glide" min="0" max="2000" step="10">
+        <small>Time for overtones to slide when the chord changes</small>
+      </div>
+      <div class="bar">
+        <label for="brightness">Brightness <output id="brightnessVal"></output></label>
+        <input type="range" id="brightness" min="0" max="100" step="1">
+        <small>Spectral tilt of the base sound</small>
+      </div>
+      <div class="row2">
+        <div class="bar">
+          <label for="partials">Partials <output id="partialsVal"></output></label>
+          <input type="range" id="partials" min="4" max="16" step="1">
+        </div>
+        <div class="bar">
+          <label for="volume">Volume <output id="volumeVal"></output></label>
+          <input type="range" id="volume" min="0" max="100" step="1">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="bar">
+          <label for="preset">Base sound</label>
+          <select id="preset"></select>
+        </div>
+        <div class="bar">
+          <label id="modeLabel">Mode</label>
+          <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+            <label><input type="radio" name="mode" id="modeSmooth" value="smooth">Smooth</label>
+            <label><input type="radio" name="mode" id="modeFused" value="fused">Fused</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="keysTitle">
+    <div class="cardhead">
+      <h2 id="keysTitle">Keys</h2>
+      <span class="hint">Click to toggle notes on and off</span>
+      <div class="kbtools"><button type="button" id="clearBtn">Clear all</button></div>
+    </div>
+    <div class="kbwrap"><div id="keyboard"></div></div>
+    <div class="midi">
+      <button type="button" id="midiBtn">Connect MIDI keyboard</button>
+      <label for="midiMode">Keys</label>
+      <select id="midiMode"><option value="hold">Hold to sound</option><option value="latch">Press to toggle</option></select>
+      <span id="midiStatus">Chrome or Edge, notes C3 to C5.</span>
+    </div>
+  </section>
+
+  <div class="lower">
+    <section class="card" aria-labelledby="curveTitle">
+      <div class="cardhead"><h2 id="curveTitle">Dissonance curve</h2></div>
+      <p class="hint">Two notes of the current base sound, with the upper one swept across an octave. Dips are the intervals this timbre finds consonant.</p>
+      <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
+    </section>
+    <section class="card" aria-labelledby="codeTitle">
+      <div class="cardhead"><h2 id="codeTitle">Your code</h2></div>
+      <div class="chips">
+        <div class="chip" id="dissChip" data-state="todo"><code>dissonance.js</code><span id="dissStatus">Not written yet</span></div>
+        <div class="chip" id="optChip" data-state="todo"><code>optimizer.js</code><span id="optStatus">Not written yet</span></div>
+      </div>
+      <button type="button" id="checksBtn">Run checks</button>
+      <ul id="checks" aria-live="polite"></ul>
+    </section>
+  </div>
+</main>
+<script>
+/*
+ * dissonance.js: YOURS TO WRITE
+ * ------------------------------------------------------------------
+ * The app calls these two functions. Replace the bodies, then set
+ * `implemented: true`. Open "Checks" in the app to test your work.
+ *
+ * Background reading:
+ *   - Plomp & Levelt (1965), "Tonal consonance and critical bandwidth", JASA.
+ *   - Sethares, "Tuning, Timbre, Spectrum, Scale" (Springer). The appendix
+ *     gives a closed-form curve fit to Plomp & Levelt's data.
+ *
+ * Conventions used everywhere in the app:
+ *   frequencies in Hz, amplitudes linear (the loudest partial of a note is 1).
+ *   A "note" is { freqs: number[], amps: number[] } with freqs[0] = fundamental.
+ */
+window.SP = window.SP || {};
+
+SP.dissonance = {
+  // Flip to true once pair() and total() are real.
+  implemented: false,
+
+  /**
+   * Roughness of two sine partials sounding together.
+   * Must be: >= 0, symmetric in its arguments, ~0 when f1 === f2,
+   * peak at a small separation, fade when the partials are far apart,
+   * and grow with amplitude.
+   */
+  pair(f1, a1, f2, a2) {
+    return 0; // TODO
+  },
+
+  /**
+   * Total roughness of a set of notes: sum of pair() over pairs of partials.
+   * opts.interNoteOnly (default true): count only pairs whose partials belong
+   * to DIFFERENT notes, so a single note on its own scores 0 and keeps its
+   * base timbre.
+   */
+  total(notes, opts = {}) {
+    const interNoteOnly = opts.interNoteOnly !== false;
+    return 0; // TODO
+  },
+};
+
+</script>
+<script>
+/*
+ * optimizer.js: YOURS TO WRITE
+ * ------------------------------------------------------------------
+ * Finds the overtone positions that make the current chord as consonant as
+ * possible. This is what plays when the Consonance knob is at 100%.
+ * The app blends between the base sound and your result:
+ *     shown = base * (optimum / base) ^ consonance
+ * and the Glide knob controls how fast the sound moves to the new positions.
+ *
+ * Input
+ *   notes:  [{ midi, f0, freqs: number[], amps: number[] }, ...]
+ *           freqs[i] = (i + 1) * f0 for the base (harmonic) timbre.
+ *   params: {
+ *     mode: 'smooth' | 'fused',
+ *        smooth = minimize roughness (dissonance.total)
+ *        fused  = pull every partial onto one shared harmonic series
+ *     maxShift: 0.45,
+ *        overtone i may sit anywhere in [(i + 1 - maxShift) * f0, (i + 1 + maxShift) * f0],
+ *        which keeps overtones in order
+ *     dissonance: SP.dissonance
+ *   }
+ *
+ * Output
+ *   number[][]: one frequency list per note, same lengths as the input.
+ *   Rules (checked in the app): freqs[0] stays exactly f0; overtones stay in
+ *   order and inside their maxShift range; the result is never rougher than
+ *   the input chord.
+ *
+ * Notes
+ *   - Runs every time a note turns on or off. Aim for well under 100 ms.
+ *     If it gets slow, move it into a Web Worker.
+ *   - The dissonance landscape has many local minima. A plain gradient step
+ *     from the harmonic positions barely moves (try it and see).
+ */
+window.SP = window.SP || {};
+
+SP.optimizer = {
+  implemented: false,
+
+  optimize(notes, params) {
+    // Placeholder: return the input unchanged.
+    return notes.map((n) => n.freqs.slice()); // TODO
+  },
+};
+
+</script>
+<script>
+/*
+ * timbre.js: base sounds (shell code)
+ * Each preset is a harmonic spectrum shape; Brightness tilts it.
+ */
+window.SP = window.SP || {};
+
+SP.timbre = {
+  presets: {
+    organ:  { label: 'Organ',  shape: (n) => ([1, 2, 4, 8].includes(n) ? 1 : [3, 6].includes(n) ? 0.75 : 0.35) },
+    reed:   { label: 'Reed',   shape: (n) => (n % 2 ? 1 : 0.3) },
+    saw:    { label: 'Saw',    shape: () => 1 },
+    flute:  { label: 'Flute',  shape: (n) => (n === 1 ? 1 : n === 2 ? 0.45 : 0.18) },
+  },
+
+  midiToHz(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  },
+
+  /** brightness 0..1: 0 = dark (steep rolloff), 1 = bright (almost flat). */
+  amps(presetKey, count, brightness) {
+    const preset = this.presets[presetKey] || this.presets.organ;
+    const tilt = 2.2 - 2.0 * brightness;
+    const raw = [];
+    for (let n = 1; n <= count; n++) raw.push(preset.shape(n) * Math.pow(n, -tilt));
+    const max = Math.max(...raw);
+    return raw.map((a) => a / max);
+  },
+
+  /** Harmonic note in 12-TET: { freqs, amps }. */
+  base(midi, count, presetKey, brightness) {
+    const f0 = this.midiToHz(midi);
+    const freqs = [];
+    for (let n = 1; n <= count; n++) freqs.push(n * f0);
+    return { freqs, amps: this.amps(presetKey, count, brightness) };
+  },
+};
+
+</script>
+<script>
+/*
+ * audio.js: additive synth engine (shell code)
+ * One sine oscillator per partial per note. Glide uses setTargetAtTime.
+ */
+window.SP = window.SP || {};
+
+SP.audio = (function () {
+  let ctx = null;
+  let master = null;
+  let volume = 0.6;
+  const voices = new Map(); // midi -> { out, oscs[], gains[] }
+
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -14;
+      comp.ratio.value = 6;
+      master = ctx.createGain();
+      master.gain.value = volume;
+      master.connect(comp);
+      comp.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function running() {
+    return !!ctx && ctx.state === 'running';
+  }
+
+  function makeVoice(count) {
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.connect(master);
+    const oscs = [];
+    const gains = [];
+    for (let i = 0; i < count; i++) {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      o.connect(g);
+      g.connect(out);
+      o.start();
+      oscs.push(o);
+      gains.push(g);
+    }
+    return { out, oscs, gains };
+  }
+
+  function release(v) {
+    const t = ctx.currentTime;
+    v.out.gain.cancelScheduledValues(t);
+    v.out.gain.setTargetAtTime(0, t, 0.06);
+    setTimeout(() => {
+      v.oscs.forEach((o) => o.stop());
+      v.out.disconnect();
+    }, 700);
+  }
+
+  /** notes: [{ midi, freqs, amps }], glideSec >= 0 */
+  function render(notes, glideSec) {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const nyquist = ctx.sampleRate / 2;
+    const byMidi = new Map(notes.map((n) => [n.midi, n]));
+
+    for (const [midi, v] of voices) {
+      const n = byMidi.get(midi);
+      if (!n || n.freqs.length !== v.oscs.length) {
+        release(v);
+        voices.delete(midi);
+      }
+    }
+
+    const level = 0.5 / Math.sqrt(Math.max(1, notes.length));
+    for (const note of notes) {
+      let v = voices.get(note.midi);
+      const fresh = !v;
+      if (fresh) {
+        v = makeVoice(note.freqs.length);
+        voices.set(note.midi, v);
+      }
+      const sum = note.amps.reduce((a, b) => a + b, 0) || 1;
+      note.freqs.forEach((f, i) => {
+        const p = v.oscs[i].frequency;
+        p.cancelScheduledValues(t);
+        if (fresh || glideSec <= 0.001) {
+          p.setValueAtTime(f, t);
+        } else {
+          p.setValueAtTime(p.value, t);
+          p.setTargetAtTime(f, t, glideSec / 4); // ~98% there after glideSec
+        }
+        // Partials at or above Nyquist would alias: silence them.
+        const a = f < nyquist * 0.95 ? note.amps[i] / sum : 0;
+        v.gains[i].gain.setTargetAtTime(a, t, 0.02);
+      });
+      v.out.gain.cancelScheduledValues(t);
+      v.out.gain.setTargetAtTime(level, t, fresh ? 0.012 : 0.05);
+    }
+  }
+
+  function setVolume(x) {
+    volume = x;
+    if (master) master.gain.setTargetAtTime(x, ctx.currentTime, 0.03);
+  }
+
+  return { ensure, running, render, setVolume };
+})();
+
+</script>
+<script>
+/*
+ * views.js: canvas drawing (shell code)
+ */
+window.SP = window.SP || {};
+
+SP.views = (function () {
+  const NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+  const FIFTHS = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]; // circle-of-fifths order
+
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function noteName(midi) {
+    return NAMES[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+  }
+
+  /** Neighbouring keys on the circle of fifths get neighbouring hues. */
+  function noteColor(midi) {
+    const pos = FIFTHS.indexOf(((midi % 12) + 12) % 12);
+    return `hsl(${(pos * 30 + 15) % 360} ${cssVar('--note-s') || '42%'} ${cssVar('--note-l') || '66%'})`;
+  }
+
+  function prep(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    const c = canvas.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, r.width, r.height);
+    return { c, w: r.width, h: r.height };
+  }
+
+  const font = (size, family) => `${size}px ${cssVar(family)}`;
+
+  /** base, shown: [{ midi, freqs, amps }] in the same order. */
+  function spectrum(canvas, base, shown) {
+    const { c, w, h } = prep(canvas);
+    const L = 34, R = 10, T = 12, B = 24;
+    const fmin = 60, fmax = 8000;
+    const x = (f) => L + (Math.log(f / fmin) / Math.log(fmax / fmin)) * (w - L - R);
+    const y = (a) => {
+      const db = 20 * Math.log10(Math.max(a, 1e-4));
+      return h - B - Math.max(0, 1 + db / 48) * (h - B - T);
+    };
+
+    c.font = font(11, '--mono');
+    c.lineWidth = 1;
+    c.strokeStyle = cssVar('--grid');
+    c.fillStyle = cssVar('--ink-3');
+    c.textAlign = 'center';
+    [100, 200, 500, 1000, 2000, 5000].forEach((f) => {
+      const X = x(f);
+      c.beginPath(); c.moveTo(X, T); c.lineTo(X, h - B); c.stroke();
+      c.fillText(f >= 1000 ? f / 1000 + 'k' : String(f), X, h - 7);
+    });
+    [0, -24].forEach((db) => {
+      const Y = y(Math.pow(10, db / 20));
+      c.beginPath(); c.moveTo(L, Y); c.lineTo(w - R, Y); c.stroke();
+    });
+    c.textAlign = 'right';
+    c.fillText('0 dB', L - 4, y(1) + 4);
+    c.fillText('−24', L - 4, y(Math.pow(10, -24 / 20)) + 4);
+    c.textAlign = 'left';
+    c.fillText('Hz', 2, h - 7);
+
+    c.strokeStyle = cssVar('--rule');
+    c.beginPath(); c.moveTo(L, h - B + 0.5); c.lineTo(w - R, h - B + 0.5); c.stroke();
+
+    if (!shown.length) {
+      c.fillStyle = cssVar('--ink-3');
+      c.textAlign = 'center';
+      c.font = font(14, '--sans');
+      c.fillText('Turn on a few notes below', w / 2, h / 2);
+      return;
+    }
+
+    const ghost = cssVar('--ghost');
+    shown.forEach((note, k) => {
+      const col = noteColor(note.midi);
+      note.freqs.forEach((f, i) => {
+        const f0 = base[k].freqs[i];
+        if (f < fmin || f > fmax) return;
+        const X = x(f), X0 = x(f0), Y = y(note.amps[i]);
+        if (Math.abs(X - X0) > 0.75) {
+          c.strokeStyle = ghost;
+          c.setLineDash([2, 3]);
+          c.beginPath(); c.moveTo(X0, Y); c.lineTo(X0, h - B); c.stroke();
+          c.setLineDash([]);
+          c.strokeStyle = col;
+          c.globalAlpha = 0.55;
+          c.beginPath(); c.moveTo(X0, Y); c.lineTo(X, Y); c.stroke();
+          c.globalAlpha = 1;
+        }
+        c.strokeStyle = col;
+        c.lineWidth = i === 0 ? 2.5 : 1.6;
+        c.beginPath(); c.moveTo(X, Y); c.lineTo(X, h - B); c.stroke();
+        c.lineWidth = 1;
+        c.fillStyle = col;
+        c.beginPath(); c.arc(X, Y, i === 0 ? 3.2 : 2.2, 0, Math.PI * 2); c.fill();
+      });
+    });
+  }
+
+  /** samples: [{ cents, d }] over 0..1200. */
+  function curve(canvas, samples, implemented) {
+    const { c, w, h } = prep(canvas);
+    const L = 12, R = 12, T = 22, B = 26;
+    const x = (ct) => L + (ct / 1200) * (w - L - R);
+
+    c.font = font(11, '--mono');
+    c.lineWidth = 1;
+
+    // 12-TET semitone markers
+    c.strokeStyle = cssVar('--grid-strong');
+    for (let s = 0; s <= 12; s++) {
+      const X = x(s * 100);
+      c.beginPath(); c.moveTo(X, T); c.lineTo(X, h - B); c.stroke();
+    }
+
+    c.fillStyle = cssVar('--ink-3');
+    c.textAlign = 'center';
+    [[0, 'P1'], [300, 'm3'], [400, 'M3'], [500, 'P4'], [700, 'P5'], [900, 'M6'], [1200, 'P8']].forEach(([ct, name]) => c.fillText(name, x(ct), h - 7));
+    c.textAlign = 'left';
+    c.fillText('Cents above the lower note · lines = 12-TET semitones', L, 13);
+
+    c.strokeStyle = cssVar('--rule');
+    c.beginPath(); c.moveTo(L, h - B + 0.5); c.lineTo(w - R, h - B + 0.5); c.stroke();
+
+    const max = Math.max(0, ...samples.map((s) => s.d));
+    if (!implemented || !(max > 0)) {
+      const msg = implemented ? 'Your dissonance function returned 0 everywhere' : 'Write dissonance.js to draw this curve';
+      c.font = font(13, '--sans');
+      const tw = c.measureText(msg).width + 24;
+      c.fillStyle = cssVar('--card');
+      c.fillRect(w / 2 - tw / 2, (T + h - B) / 2 - 12, tw, 24);
+      c.fillStyle = cssVar('--ink-3');
+      c.textAlign = 'center';
+      c.fillText(msg, w / 2, (T + h - B) / 2 + 4);
+      return;
+    }
+    const y = (d) => h - B - (d / max) * (h - B - T - 4);
+    c.beginPath();
+    samples.forEach((s, i) => (i ? c.lineTo(x(s.cents), y(s.d)) : c.moveTo(x(s.cents), y(s.d))));
+    c.lineTo(x(1200), h - B); c.lineTo(x(0), h - B); c.closePath();
+    c.fillStyle = cssVar('--accent-fill');
+    c.fill();
+    c.beginPath();
+    samples.forEach((s, i) => (i ? c.lineTo(x(s.cents), y(s.d)) : c.moveTo(x(s.cents), y(s.d))));
+    c.strokeStyle = cssVar('--accent');
+    c.lineWidth = 2;
+    c.stroke();
+  }
+
+  return { spectrum, curve, noteName, noteColor };
+})();
+
+</script>
+<script>
+/*
+ * tests.js: contract checks for your two modules (shell code)
+ * Each check returns true, or a string explaining what went wrong.
+ * Checks for a module you haven't written yet show as "waiting".
+ */
+window.SP = window.SP || {};
+
+SP.tests = {
+  run() {
+    const D = SP.dissonance;
+    const O = SP.optimizer;
+    const results = [];
+
+    const check = (group, name, ready, fn) => {
+      if (!ready) return results.push({ group, name, status: 'waiting', note: '' });
+      try {
+        const r = fn();
+        results.push({ group, name, status: r === true ? 'pass' : 'fail', note: r === true ? '' : String(r) });
+      } catch (e) {
+        results.push({ group, name, status: 'fail', note: e.message });
+      }
+    };
+
+    const d = D.implemented;
+    check('dissonance', 'Identical sines have no roughness', d, () => Math.abs(D.pair(440, 1, 440, 1)) < 1e-6 || `got ${D.pair(440, 1, 440, 1)}`);
+    check('dissonance', 'pair() is symmetric', d, () => Math.abs(D.pair(440, 1, 470, 0.5) - D.pair(470, 0.5, 440, 1)) < 1e-9 || 'pair(a, b) differs from pair(b, a)');
+    check('dissonance', 'Roughness is never negative', d, () => {
+      for (let df = 0; df <= 600; df += 5) if (D.pair(300, 1, 300 + df, 1) < -1e-9) return `negative at ${df} Hz apart`;
+      return true;
+    });
+    check('dissonance', 'Roughness peaks at a small separation (10–60 Hz apart near 440 Hz)', d, () => {
+      let best = 0, at = 0;
+      for (let df = 1; df <= 300; df++) {
+        const v = D.pair(440, 1, 440 + df, 1);
+        if (v > best) { best = v; at = df; }
+      }
+      return (best > 0 && at >= 10 && at <= 60) || `peak at ${at} Hz apart`;
+    });
+    check('dissonance', 'Roughness fades an octave apart (<10% of peak)', d, () => {
+      let peak = 0;
+      for (let df = 1; df <= 300; df++) peak = Math.max(peak, D.pair(440, 1, 440 + df, 1));
+      const far = D.pair(440, 1, 880, 1);
+      return (peak > 0 && far < 0.1 * peak) || `an octave apart is ${Math.round((far / peak) * 100)}% of peak`;
+    });
+    check('dissonance', 'Louder partials are rougher', d, () => D.pair(440, 1, 465, 1) > D.pair(440, 0.3, 465, 0.3) || 'amplitude has no effect');
+    check('dissonance', 'A single note scores 0 (between-notes only)', d, () => {
+      const v = D.total([SP.timbre.base(60, 8, 'saw', 0.6)], { interNoteOnly: true });
+      return Math.abs(v) < 1e-9 || `got ${v}`;
+    });
+    check('dissonance', 'A fifth (3:2) is smoother than a tritone', d, () => {
+      const a = SP.timbre.base(60, 8, 'saw', 0.6);
+      const up = (r) => ({ freqs: a.freqs.map((f) => f * r), amps: a.amps });
+      const fifth = D.total([a, up(1.5)]);
+      const tritone = D.total([a, up(Math.SQRT2)]);
+      return fifth < tritone || `fifth ${fifth.toFixed(3)} vs tritone ${tritone.toFixed(3)}`;
+    });
+
+    const o = O.implemented;
+    const chord = [60, 64, 67].map((m) => {
+      const b = SP.timbre.base(m, 8, 'organ', 0.6);
+      return { midi: m, f0: b.freqs[0], freqs: b.freqs, amps: b.amps };
+    });
+    let out = null;
+    const params = { mode: 'smooth', maxShift: 0.45, dissonance: D };
+    check('optimizer', 'Returns one frequency list per note, same lengths', o, () => {
+      out = O.optimize(chord.map((n) => ({ ...n, freqs: n.freqs.slice() })), params);
+      return (Array.isArray(out) && out.length === chord.length && out.every((f, k) => f.length === chord[k].freqs.length)) || 'shape does not match the input';
+    });
+    check('optimizer', 'Fundamentals do not move', o, () => (out && out.every((f, k) => Math.abs(f[0] - chord[k].f0) < 1e-6)) || 'a fundamental moved');
+    check('optimizer', 'Overtones stay in order', o, () => (out && out.every((f) => f.every((v, i) => i === 0 || v > f[i - 1]))) || 'two overtones crossed');
+    check('optimizer', 'Overtones stay inside maxShift', o, () =>
+      (out && out.every((f, k) => f.every((v, i) => Math.abs(v / chord[k].f0 - (i + 1)) <= params.maxShift + 1e-9))) || 'an overtone moved past maxShift');
+    check('optimizer', 'Result is no rougher than the plain chord', o && d, () => {
+      const before = D.total(chord);
+      const after = D.total(chord.map((n, k) => ({ freqs: out[k], amps: n.amps })));
+      return after <= before + 1e-9 || `rougher: ${before.toFixed(3)} → ${after.toFixed(3)}`;
+    });
+
+    return results;
+  },
+};
+
+</script>
+<script>
+/*
+ * app.js: wiring (shell code)
+ */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const LOW = 48, HIGH = 72; // C3..C5
+
+  const state = {
+    active: new Set([60, 64, 67]),
+    consonance: 100,
+    glide: 250,
+    brightness: 55,
+    partials: 8,
+    mode: 'smooth',
+    preset: 'organ',
+    volume: 60,
+    midiMode: 'hold',
+  };
+
+  // ---------------------------------------------------------------- keyboard
+  const BLACK = new Set([1, 3, 6, 8, 10]);
+  function buildKeyboard() {
+    const kb = $('keyboard');
+    const whites = [];
+    for (let m = LOW; m <= HIGH; m++) if (!BLACK.has(m % 12)) whites.push(m);
+    kb.style.setProperty('--whites', whites.length);
+    for (let m = LOW; m <= HIGH; m++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = BLACK.has(m % 12) ? 'key black' : 'key white';
+      b.dataset.midi = m;
+      b.setAttribute('aria-label', SP.views.noteName(m));
+      if (BLACK.has(m % 12)) {
+        const leftWhite = whites.indexOf(m - 1);
+        b.style.setProperty('--pos', leftWhite + 1);
+      } else if (m % 12 === 0) {
+        const tag = document.createElement('span');
+        tag.textContent = SP.views.noteName(m);
+        b.appendChild(tag);
+      }
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        SP.audio.ensure();
+        toggle(m);
+      });
+      b.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          SP.audio.ensure();
+          toggle(m);
+        }
+      });
+      kb.appendChild(b);
+    }
+  }
+  function toggle(m, on) {
+    const want = on === undefined ? !state.active.has(m) : on;
+    if (want) state.active.add(m); else state.active.delete(m);
+    update();
+  }
+  function paintKeys() {
+    document.querySelectorAll('.key').forEach((k) => {
+      const m = Number(k.dataset.midi);
+      const on = state.active.has(m);
+      k.setAttribute('aria-pressed', on);
+      k.style.setProperty('--note', on ? SP.views.noteColor(m) : 'transparent');
+    });
+  }
+
+  // ---------------------------------------------------------------- engine
+  let last = { base: [], shown: [] };
+  let optimizerNote = '';
+
+  function compute() {
+    const midis = [...state.active].sort((a, b) => a - b);
+    const bright = state.brightness / 100;
+    const base = midis.map((m) => ({ midi: m, ...SP.timbre.base(m, state.partials, state.preset, bright) }));
+
+    let optimum = base.map((n) => n.freqs.slice());
+    optimizerNote = SP.optimizer.implemented ? '' : 'Not written yet';
+    if (SP.optimizer.implemented && base.length > 1) {
+      const input = base.map((n) => ({ midi: n.midi, f0: n.freqs[0], freqs: n.freqs.slice(), amps: n.amps.slice() }));
+      const t0 = performance.now();
+      try {
+        const r = SP.optimizer.optimize(input, { mode: state.mode, maxShift: 0.45, dissonance: SP.dissonance });
+        const ok = Array.isArray(r) && r.length === base.length && r.every((f, k) => f.length === base[k].freqs.length && f.every((v) => v > 0 && isFinite(v)));
+        if (ok) optimum = r;
+        optimizerNote = ok ? `${Math.round(performance.now() - t0)} ms per chord` : 'Returned the wrong shape; ignored';
+      } catch (e) {
+        optimizerNote = `Error: ${e.message}`;
+      }
+    }
+
+    const c = state.consonance / 100;
+    const shown = base.map((n, k) => ({
+      midi: n.midi,
+      amps: n.amps,
+      freqs: n.freqs.map((f, i) => f * Math.pow(optimum[k][i] / f, c)),
+    }));
+    return { base, shown };
+  }
+
+  function readouts(base, shown) {
+    let maxShift = 0;
+    shown.forEach((n, k) => n.freqs.forEach((f, i) => { maxShift = Math.max(maxShift, Math.abs(1200 * Math.log2(f / base[k].freqs[i]))); }));
+    $('shiftOut').textContent = `${Math.round(maxShift)}¢`;
+
+    if (SP.dissonance.implemented && base.length > 1) {
+      const before = SP.dissonance.total(base);
+      const after = SP.dissonance.total(shown);
+      const pct = before > 0 ? Math.round((1 - after / before) * 100) : 0;
+      $('roughOut').textContent = `${before.toFixed(3)} → ${after.toFixed(3)}`;
+      $('roughPct').textContent = before > 0 ? `${pct >= 0 ? '−' : '+'}${Math.abs(pct)}%` : '';
+    } else {
+      $('roughOut').textContent = SP.dissonance.implemented ? '–' : 'needs dissonance.js';
+      $('roughPct').textContent = '';
+    }
+    $('chordOut').textContent = base.length ? base.map((n) => SP.views.noteName(n.midi)).join(' · ') : 'silence';
+    $('optStatus').textContent = optimizerNote;
+    $('dissStatus').textContent = SP.dissonance.implemented ? 'Written' : 'Not written yet';
+    $('dissChip').dataset.state = SP.dissonance.implemented ? 'ok' : 'todo';
+    $('optChip').dataset.state = SP.optimizer.implemented ? (optimizerNote.startsWith('Error') || optimizerNote.startsWith('Returned') ? 'bad' : 'ok') : 'todo';
+  }
+
+  function drawCurve() {
+    const samples = [];
+    if (SP.dissonance.implemented) {
+      const a = SP.timbre.base(60, state.partials, state.preset, state.brightness / 100);
+      for (let ct = 0; ct <= 1200; ct += 4) {
+        const r = Math.pow(2, ct / 1200);
+        samples.push({ cents: ct, d: SP.dissonance.total([a, { freqs: a.freqs.map((f) => f * r), amps: a.amps }]) });
+      }
+    }
+    SP.views.curve($('curve'), samples, SP.dissonance.implemented);
+  }
+
+  function update() {
+    const { base, shown } = compute();
+    last = { base, shown };
+    SP.audio.render(shown, state.glide / 1000);
+    SP.views.spectrum($('spectrum'), base, shown);
+    paintKeys();
+    readouts(base, shown);
+    $('soundBtn').textContent = SP.audio.running() ? 'Sound on' : 'Start sound';
+    $('soundBtn').setAttribute('aria-pressed', SP.audio.running());
+  }
+
+  // ---------------------------------------------------------------- controls
+  function bindRange(id, key, fmt, redrawCurve) {
+    const el = $(id);
+    const out = $(id + 'Val');
+    el.value = state[key];
+    const show = () => { out.textContent = fmt(state[key]); };
+    show();
+    el.addEventListener('input', () => {
+      state[key] = Number(el.value);
+      show();
+      if (key === 'volume') { SP.audio.setVolume(state.volume / 100); return; }
+      update();
+      if (redrawCurve) drawCurve();
+    });
+  }
+
+  function bindControls() {
+    bindRange('consonance', 'consonance', (v) => `${v}%`);
+    bindRange('glide', 'glide', (v) => (v === 0 ? 'instant' : `${v} ms`));
+    bindRange('brightness', 'brightness', (v) => `${v}%`, true);
+    bindRange('partials', 'partials', (v) => String(v), true);
+    bindRange('volume', 'volume', (v) => `${v}%`);
+
+    const preset = $('preset');
+    Object.entries(SP.timbre.presets).forEach(([k, p]) => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = p.label;
+      preset.appendChild(o);
+    });
+    preset.value = state.preset;
+    preset.addEventListener('change', () => { state.preset = preset.value; update(); drawCurve(); });
+
+    document.querySelectorAll('input[name="mode"]').forEach((r) => {
+      r.checked = r.value === state.mode;
+      r.addEventListener('change', () => { if (r.checked) { state.mode = r.value; update(); } });
+    });
+
+    $('soundBtn').addEventListener('click', () => { SP.audio.ensure(); setTimeout(update, 60); });
+    $('clearBtn').addEventListener('click', () => { state.active.clear(); update(); });
+    $('checksBtn').addEventListener('click', runChecks);
+    $('midiBtn').addEventListener('click', connectMidi);
+    $('midiMode').addEventListener('change', (e) => { state.midiMode = e.target.value; });
+  }
+
+  // ---------------------------------------------------------------- checks
+  function runChecks() {
+    const list = $('checks');
+    list.innerHTML = '';
+    SP.tests.run().forEach((r) => {
+      const li = document.createElement('li');
+      li.dataset.status = r.status;
+      const mark = document.createElement('span');
+      mark.className = 'mark';
+      mark.textContent = r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : '○';
+      const text = document.createElement('span');
+      const g = document.createElement('b');
+      g.textContent = r.group;
+      text.append(g, ' ' + r.name);
+      if (r.note) {
+        const em = document.createElement('em');
+        em.textContent = r.note;
+        text.appendChild(em);
+      }
+      li.append(mark, text);
+      list.appendChild(li);
+    });
+  }
+
+  // ---------------------------------------------------------------- MIDI
+  async function connectMidi() {
+    const status = $('midiStatus');
+    if (!navigator.requestMIDIAccess) {
+      status.textContent = 'This browser has no Web MIDI. Use Chrome or Edge.';
+      return;
+    }
+    try {
+      const access = await navigator.requestMIDIAccess();
+      const hook = () => {
+        const names = [];
+        access.inputs.forEach((input) => {
+          names.push(input.name);
+          input.onmidimessage = (msg) => {
+            const [st, note, vel] = msg.data;
+            const type = st & 0xf0;
+            if (note < LOW || note > HIGH) return;
+            SP.audio.ensure();
+            if (type === 0x90 && vel > 0) toggle(note, state.midiMode === 'latch' ? !state.active.has(note) : true);
+            else if ((type === 0x80 || (type === 0x90 && vel === 0)) && state.midiMode === 'hold') toggle(note, false);
+          };
+        });
+        status.textContent = names.length ? `Listening: ${names.join(', ')} (C3–C5)` : 'No MIDI inputs found. Plug in the keyboard and connect again.';
+      };
+      hook();
+      access.onstatechange = hook;
+    } catch (e) {
+      status.textContent = 'MIDI access was blocked here. Open index.html locally in Chrome to use your keyboard.';
+    }
+  }
+
+  // ---------------------------------------------------------------- boot
+  buildKeyboard();
+  bindControls();
+  update();
+  drawCurve();
+  runChecks();
+  const ro = new ResizeObserver(() => { SP.views.spectrum($('spectrum'), last.base, last.shown); drawCurve(); });
+  ro.observe($('spectrum'));
+  ro.observe($('curve'));
+})();
+
+</script>
+<!-- BUILD:CONTENT-END -->
+</body>
+</html>
