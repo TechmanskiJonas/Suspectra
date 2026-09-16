@@ -26,7 +26,7 @@ If he explicitly says "write the optimizer for me", confirm once that he wants t
 
 No build step, no server, no dependencies. Open `index.html` in Chrome (double-click works). Web MIDI works from a local file in Chrome.
 
-Single-file build (for sharing or hosting): `python tools/build_single.py` → `dist/suspectra.html`.
+Single-file build (for sharing or hosting): `python tools/build_single.py` → `dist/Suspectra.html`.
 
 Hosting: push to GitHub and enable GitHub Pages on the repo root; `index.html` is the entry point.
 

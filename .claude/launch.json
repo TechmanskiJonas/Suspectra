@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "suspectra",
+      "name": "Suspectra",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8002"],
       "port": 8002

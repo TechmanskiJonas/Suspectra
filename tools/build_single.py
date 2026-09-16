@@ -1,6 +1,6 @@
 """Inline src/*.css and src/*.js into one self-contained HTML file.
 
-Usage:  python tools/build_single.py            -> dist/suspectra.html (full document)
+Usage:  python tools/build_single.py            -> dist/Suspectra.html (full document)
         python tools/build_single.py --fragment -> dist/fragment.html (no <html>/<head>/<body>)
 """
 import pathlib, re, sys
@@ -25,5 +25,5 @@ if "--fragment" in sys.argv:
     (out / "fragment.html").write_text(head + body, encoding="utf-8")
     print("wrote dist/fragment.html")
 else:
-    (out / "suspectra.html").write_text(html, encoding="utf-8")
-    print("wrote dist/suspectra.html")
+    (out / "Suspectra.html").write_text(html, encoding="utf-8")
+    print("wrote dist/Suspectra.html")
