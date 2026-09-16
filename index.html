@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- BUILD:CONTENT-START -->
+<title>Suspectra</title>
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="src/style.css">
+<!-- BUILD:HEAD-END -->
+</head>
+<body>
+<header>
+  <h1>Suspectra</h1>
+  <span class="sub">Can chord-aware overtone adaptation make 12-TET chords measurably smoother?</span>
+  <span class="byline">Jonas Techmanski</span>
+</header>
+
+<main class="page">
+  <section class="card readouts" aria-live="polite" aria-label="Current chord">
+    <button type="button" class="primary" id="soundBtn" aria-pressed="false">Start sound</button>
+    <div class="readout"><span class="label">Chord</span><span class="value" id="chordOut">–</span></div>
+    <div class="readout"><span class="label">Roughness</span><span class="value"><span id="roughOut">–</span><span class="pct" id="roughPct"></span></span></div>
+    <div class="readout"><span class="label">Largest shift</span><span class="value" id="shiftOut">0¢</span></div>
+  </section>
+
+  <div class="main">
+    <section class="card" aria-labelledby="specTitle">
+      <div class="cardhead"><h2 id="specTitle">Overtones</h2></div>
+      <p class="hint">Each line is a partial, colored by note. Neighbors on the circle of fifths share hues. Dotted ghosts mark where a partial would sit on the harmonic series.</p>
+      <canvas id="spectrum" role="img" aria-label="Spectrum of the sounding partials on a log-frequency axis"></canvas>
+    </section>
+
+    <section class="card bars" aria-label="Controls">
+      <div class="bar">
+        <label for="consonance">Consonance <output id="consonanceVal"></output></label>
+        <input type="range" id="consonance" min="0" max="100" step="1">
+        <small>0 is the base instrument, 100 is the optimizer's best arrangement</small>
+      </div>
+      <div class="bar">
+        <label for="glide">Glide <output id="glideVal"></output></label>
+        <input type="range" id="glide" min="0" max="2000" step="10">
+        <small>Time for overtones to slide when the chord changes</small>
+      </div>
+      <div class="bar">
+        <label for="brightness">Brightness <output id="brightnessVal"></output></label>
+        <input type="range" id="brightness" min="0" max="100" step="1">
+        <small>Spectral tilt of the base sound</small>
+      </div>
+      <div class="row2">
+        <div class="bar">
+          <label for="partials">Partials <output id="partialsVal"></output></label>
+          <input type="range" id="partials" min="4" max="16" step="1">
+        </div>
+        <div class="bar">
+          <label for="volume">Volume <output id="volumeVal"></output></label>
+          <input type="range" id="volume" min="0" max="100" step="1">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="bar">
+          <label for="preset">Base sound</label>
+          <select id="preset"></select>
+        </div>
+        <div class="bar">
+          <label id="modeLabel">Mode</label>
+          <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+            <label><input type="radio" name="mode" id="modeSmooth" value="smooth">Smooth</label>
+            <label><input type="radio" name="mode" id="modeFused" value="fused">Fused</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="keysTitle">
+    <div class="cardhead">
+      <h2 id="keysTitle">Keys</h2>
+      <span class="hint">Click to toggle notes on and off</span>
+      <div class="kbtools"><button type="button" id="clearBtn">Clear all</button></div>
+    </div>
+    <div class="kbwrap"><div id="keyboard"></div></div>
+    <div class="midi">
+      <button type="button" id="midiBtn">Connect MIDI keyboard</button>
+      <label for="midiMode">Keys</label>
+      <select id="midiMode"><option value="hold">Hold to sound</option><option value="latch">Press to toggle</option></select>
+      <span id="midiStatus">Chrome or Edge, notes C3 to C5.</span>
+    </div>
+  </section>
+
+  <div class="lower">
+    <section class="card" aria-labelledby="curveTitle">
+      <div class="cardhead"><h2 id="curveTitle">Dissonance curve</h2></div>
+      <p class="hint">Two notes of the current base sound, with the upper one swept across an octave. Dips are the intervals this timbre finds consonant.</p>
+      <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
+    </section>
+    <section class="card" aria-labelledby="codeTitle">
+      <div class="cardhead"><h2 id="codeTitle">Your code</h2></div>
+      <div class="chips">
+        <div class="chip" id="dissChip" data-state="todo"><code>dissonance.js</code><span id="dissStatus">Not written yet</span></div>
+        <div class="chip" id="optChip" data-state="todo"><code>optimizer.js</code><span id="optStatus">Not written yet</span></div>
+      </div>
+      <button type="button" id="checksBtn">Run checks</button>
+      <ul id="checks" aria-live="polite"></ul>
+    </section>
+  </div>
+</main>
+<script src="src/dissonance.js"></script>
+<script src="src/optimizer.js"></script>
+<script src="src/timbre.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/views.js"></script>
+<script src="src/tests.js"></script>
+<script src="src/app.js"></script>
+<!-- BUILD:CONTENT-END -->
+</body>
+</html>
