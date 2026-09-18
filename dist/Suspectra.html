@@ -307,7 +307,7 @@ body.staging .key.sounding::after {
 <body>
 <header>
   <h1>Suspectra</h1>
-  <span class="sub">Can chord-aware overtone adaptation make 12-TET chords measurably smoother?</span>
+  <span class="sub">A tool for investigating consonance in 12-TET chords</span>
   <span class="byline">Jonas Techmanski</span>
 </header>
 
@@ -326,7 +326,7 @@ body.staging .key.sounding::after {
         <h2 id="specTitle">Overtones</h2>
         <span class="tag" id="previewTag">previewing the next chord</span>
       </div>
-      <p class="hint">Each line is a partial, colored by note. Neighbors on the circle of fifths share hues. Dotted ghosts mark where a partial would sit on the harmonic series.</p>
+      <p class="hint">Each line is a partial. Partials from the same fundamental share a color. Dotted lines mark the original harmonic positions.</p>
       <canvas id="spectrum" role="img" aria-label="Spectrum of the sounding partials on a log-frequency axis"></canvas>
     </section>
 
@@ -334,7 +334,7 @@ body.staging .key.sounding::after {
       <div class="bar">
         <label for="consonance">Consonance <span class="ctl"><output id="consonanceVal"></output><button type="button" class="i" data-info="consonance" aria-label="About Consonance">i</button></span></label>
         <input type="range" id="consonance" min="0" max="100" step="1">
-        <small>0 is the base instrument, 100 is the optimizer's best arrangement</small>
+        <small>0 is the base instrument, 100 is the optimal arrangement</small>
       </div>
       <div class="bar">
         <label for="glide">Glide <span class="ctl"><output id="glideVal"></output><button type="button" class="i" data-info="glide" aria-label="About Glide">i</button></span></label>
@@ -399,7 +399,7 @@ body.staging .key.sounding::after {
 
   <section class="card" aria-labelledby="curveTitle">
     <div class="cardhead"><h2 id="curveTitle">Dissonance curve</h2></div>
-    <p class="hint">Two notes of the current base sound, with the upper one swept across an octave. Dips are the intervals this timbre finds consonant.</p>
+    <p class="hint">Roughness of two notes of the current base sound, as the upper note is swept across an octave.</p>
     <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
   </section>
 </main>
