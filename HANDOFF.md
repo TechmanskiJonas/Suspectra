@@ -12,7 +12,9 @@ It's also a research project for ECE 401 office hours (Prof. Mark Hasegawa-Johns
 
 ## Ground rule for assistants
 
-**Jonas writes `src/dissonance.js` and `src/optimizer.js` himself.** Do not write, complete, or paste implementations of `pair`, `total`, or `optimize`, even partially, even if asked casually. He will explain this code to a professor line by line.
+**`src/dissonance.js` is Jonas's own work.** `pair` and `total` were written by him on 2026-09-17. Do not rewrite them; review and explain instead.
+
+**`src/optimizer.js` was written by Claude on 2026-09-18**, at Jonas's request and after the confirmation below, from a method the two of them worked through beforehand. Say so if anyone asks who wrote what.
 
 You may:
 - explain the math (Plomp & Levelt 1965; Sethares' curve fit; gradient descent, coordinate descent, multi-start, simulated annealing), with equations in prose or LaTeX, not code
@@ -20,7 +22,7 @@ You may:
 - write new checks in `src/tests.js`
 - build anything in the shell: UI, audio, views, Web Worker plumbing, MIDI, plotting, export
 
-If he explicitly says "write the optimizer for me", confirm once that he wants to give up authorship of that file, then proceed.
+If he explicitly asks for an implementation of one of these functions, confirm once that he wants to give up authorship of that file, then proceed.
 
 ## Run it
 
@@ -35,12 +37,12 @@ Hosting: push to GitHub and enable GitHub Pages on the repo root; `index.html` i
 | File | Owner | What it does |
 |---|---|---|
 | `src/dissonance.js` | **Jonas** | `pair(f1, a1, f2, a2)` and `total(notes, { interNoteOnly })` |
-| `src/optimizer.js` | **Jonas** | `optimize(notes, params)` → the best overtone positions for the chord |
-| `src/timbre.js` | shell | Base sounds (Organ, Reed, Saw, Flute) and the Brightness tilt |
+| `src/optimizer.js` | Claude, for Jonas | `optimize(notes, params)`: coordinate descent (Smooth) and a shared harmonic series (Fused) |
+| `src/timbre.js` | shell | Eleven base sounds, including two formant-based voices, and the Brightness tilt |
 | `src/audio.js` | shell | Web Audio additive synth: one sine per partial, glide via `setTargetAtTime`, partials at or above Nyquist silenced |
 | `src/views.js` | shell | Canvas: overtone spectrum (log Hz) and dissonance curve with 12-TET semitone markers |
-| `src/tests.js` | shell | Contract checks, shown in the app under "Your code" |
-| `src/app.js` | shell | State, keyboard (C3–C5), controls, MIDI, redraws |
+| `src/tests.js` | shell | Contract checks. The panel is gone; run `SP.tests.run()` in the console |
+| `src/app.js` | shell | State, keyboard (C3–C5), controls, MIDI, mode hotkeys, staging the next chord |
 | `src/style.css` | shell | Theme tokens (dark only, same design brief as Sonokinetic) |
 
 Plain scripts on a global `SP` namespace (no ES modules) so the page runs from `file://`.
@@ -59,7 +61,7 @@ Units: Hz and linear amplitude. A note is `{ freqs: number[], amps: number[] }`,
 - returns `number[][]`, one frequency list per note, same lengths
 - rules: `freqs[0] === f0`; overtone `i` stays within `[(i+1-maxShift)·f0, (i+1+maxShift)·f0]`; order preserved; never rougher than the input
 
-The app blends: `shown = base · (optimum / base)^consonance`. Set `implemented: true` in each file when it's real; the app then uses it and the checks run.
+The app blends: `shown = base · (optimum / base)^consonance`. Both modules set `implemented: true`, which is what makes the app call into them.
 
 Performance: `optimize` runs on every note toggle, on the main thread. Target under 100 ms for 4–6 notes × 8 partials. If it's slower, move it to a Web Worker (shell work, fine for assistants to build).
 

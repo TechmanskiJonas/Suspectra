@@ -22,23 +22,27 @@
     <div class="readout"><span class="label">Chord</span><span class="value" id="chordOut">–</span></div>
     <div class="readout"><span class="label">Roughness</span><span class="value"><span id="roughOut">–</span><span class="pct" id="roughPct"></span></span></div>
     <div class="readout"><span class="label">Largest shift</span><span class="value" id="shiftOut">0¢</span></div>
+    <div class="readout"><span class="label">Optimizer</span><span class="value" id="optOut">–</span></div>
   </section>
 
   <div class="main">
     <section class="card" aria-labelledby="specTitle">
-      <div class="cardhead"><h2 id="specTitle">Overtones</h2></div>
+      <div class="cardhead">
+        <h2 id="specTitle">Overtones</h2>
+        <span class="tag" id="previewTag">previewing the next chord</span>
+      </div>
       <p class="hint">Each line is a partial, colored by note. Neighbors on the circle of fifths share hues. Dotted ghosts mark where a partial would sit on the harmonic series.</p>
       <canvas id="spectrum" role="img" aria-label="Spectrum of the sounding partials on a log-frequency axis"></canvas>
     </section>
 
     <section class="card bars" aria-label="Controls">
       <div class="bar">
-        <label for="consonance">Consonance <output id="consonanceVal"></output></label>
+        <label for="consonance">Consonance <span class="ctl"><output id="consonanceVal"></output><button type="button" class="i" data-info="consonance" aria-label="About Consonance">i</button></span></label>
         <input type="range" id="consonance" min="0" max="100" step="1">
         <small>0 is the base instrument, 100 is the optimizer's best arrangement</small>
       </div>
       <div class="bar">
-        <label for="glide">Glide <output id="glideVal"></output></label>
+        <label for="glide">Glide <span class="ctl"><output id="glideVal"></output><button type="button" class="i" data-info="glide" aria-label="About Glide">i</button></span></label>
         <input type="range" id="glide" min="0" max="2000" step="10">
         <small>Time for overtones to slide when the chord changes</small>
       </div>
@@ -57,18 +61,18 @@
           <input type="range" id="volume" min="0" max="100" step="1">
         </div>
       </div>
-      <div class="row2">
-        <div class="bar">
-          <label for="preset">Base sound</label>
-          <select id="preset"></select>
+      <div class="bar">
+        <label for="preset">Base sound</label>
+        <select id="preset"></select>
+      </div>
+      <div class="bar">
+        <label id="modeLabel">Mode <button type="button" class="i" data-info="mode" aria-label="About the modes">i</button></label>
+        <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+          <label><input type="radio" name="mode" value="off">Off</label>
+          <label><input type="radio" name="mode" value="smooth">Smooth <kbd>1</kbd></label>
+          <label><input type="radio" name="mode" value="fused">Fused <kbd>2</kbd></label>
         </div>
-        <div class="bar">
-          <label id="modeLabel">Mode</label>
-          <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
-            <label><input type="radio" name="mode" id="modeSmooth" value="smooth">Smooth</label>
-            <label><input type="radio" name="mode" id="modeFused" value="fused">Fused</label>
-          </div>
-        </div>
+        <small>Hold 1 or 2 to punch a mode in while playing</small>
       </div>
     </section>
   </div>
@@ -77,7 +81,17 @@
     <div class="cardhead">
       <h2 id="keysTitle">Keys</h2>
       <span class="hint">Click to toggle notes on and off</span>
-      <div class="kbtools"><button type="button" id="clearBtn">Clear all</button></div>
+      <div class="kbtools">
+        <button type="button" id="stageBtn">Set next chord</button>
+        <button type="button" id="playBtn" class="primary">Play it</button>
+        <button type="button" id="cancelBtn">Cancel</button>
+        <button type="button" id="clearBtn">Clear all</button>
+      </div>
+    </div>
+    <div class="stagebar" id="stageBar">
+      <span>Editing the next chord. The current one keeps sounding until you play it.</span>
+      <span class="dim"><kbd>Enter</kbd> to play, <kbd>Esc</kbd> to cancel</span>
+      <button type="button" class="i" data-info="next" aria-label="About the next chord">i</button>
     </div>
     <div class="kbwrap"><div id="keyboard"></div></div>
     <div class="midi">
@@ -88,22 +102,11 @@
     </div>
   </section>
 
-  <div class="lower">
-    <section class="card" aria-labelledby="curveTitle">
-      <div class="cardhead"><h2 id="curveTitle">Dissonance curve</h2></div>
-      <p class="hint">Two notes of the current base sound, with the upper one swept across an octave. Dips are the intervals this timbre finds consonant.</p>
-      <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
-    </section>
-    <section class="card" aria-labelledby="codeTitle">
-      <div class="cardhead"><h2 id="codeTitle">Your code</h2></div>
-      <div class="chips">
-        <div class="chip" id="dissChip" data-state="todo"><code>dissonance.js</code><span id="dissStatus">Not written yet</span></div>
-        <div class="chip" id="optChip" data-state="todo"><code>optimizer.js</code><span id="optStatus">Not written yet</span></div>
-      </div>
-      <button type="button" id="checksBtn">Run checks</button>
-      <ul id="checks" aria-live="polite"></ul>
-    </section>
-  </div>
+  <section class="card" aria-labelledby="curveTitle">
+    <div class="cardhead"><h2 id="curveTitle">Dissonance curve</h2></div>
+    <p class="hint">Two notes of the current base sound, with the upper one swept across an octave. Dips are the intervals this timbre finds consonant.</p>
+    <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
+  </section>
 </main>
 <script src="src/dissonance.js"></script>
 <script src="src/optimizer.js"></script>
