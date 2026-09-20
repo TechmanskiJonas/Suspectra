@@ -102,10 +102,15 @@ SP.audio = (function () {
     }
   }
 
+  /** Suspend the context, used when the listening test takes over. */
+  function suspend() {
+    if (ctx && ctx.state === 'running') ctx.suspend();
+  }
+
   function setVolume(x) {
     volume = x;
     if (master) master.gain.setTargetAtTime(x, ctx.currentTime, 0.03);
   }
 
-  return { ensure, running, render, setVolume };
+  return { ensure, running, render, setVolume, suspend };
 })();

@@ -12,8 +12,8 @@
  * Same design brief as Sonokinetic, in a dark ground: a lab instrument that
  * could sit open on a desk during a meeting. Neutral surfaces, near-white
  * text, one ink accent, plain typographic hierarchy. Monospace is reserved
- * for numbers, where tabular alignment does actual work. Color on the page
- * belongs to the notes; the chrome around them stays grey.
+ * for numbers, where tabular alignment does actual work. Color is reserved
+ * for the notes, and the surrounding interface stays grey.
  */
 
 :root {
@@ -83,6 +83,16 @@ header .sub {
   color: var(--ink-3); font-size: 12.5px;
   font-family: var(--serif); font-style: italic;
 }
+nav.nav { display: flex; gap: 2px; margin-left: 18px; align-self: center; }
+nav.nav .tab {
+  background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  padding: 3px 10px; font-size: 13px; color: var(--ink-3);
+}
+nav.nav .tab:hover { color: var(--ink); background: none; }
+nav.nav .tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+main.view { display: none; }
+main.view.on { display: grid; }
 .byline {
   margin-left: auto; color: var(--ink-3); font-size: 11.5px;
   font-family: var(--serif); font-style: italic;
@@ -302,16 +312,80 @@ body.staging .key.sounding::after {
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 </style>
+<style>
+/* Listening-test runner, on the same tokens as the instrument. During a run
+ * the page shows only the trial, so nothing about the condition behind a
+ * button is visible to the listener. */
+
+.page.narrow { max-width: 980px; }
+
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row + .row { margin-top: 10px; }
+.dim { color: var(--ink-3); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+input[type=text] {
+  background: var(--sunken); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 4px 8px; font: inherit; font-size: 13px; width: 160px;
+}
+input[type=text]:focus { outline: 2px solid var(--accent-w); border-color: var(--accent); }
+.filebtn {
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 4px 11px; font-size: 13px; cursor: pointer; color: var(--ink);
+}
+.filebtn:hover { border-color: var(--ink-3); background: var(--sunken); }
+
+/* ---- tables ---------------------------------------------------------- */
+
+.tablewrap { overflow-x: auto; margin: 4px 0 12px; }
+table.grid { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+table.grid th {
+  text-align: left; font-weight: 500; color: var(--ink-3);
+  border-bottom: 1px solid var(--rule); padding: 4px 10px 5px; white-space: nowrap;
+}
+table.grid td { padding: 3px 10px; border-bottom: 1px solid var(--rule-soft); color: var(--ink-2); white-space: nowrap; }
+table.grid td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+table.grid tr.bad td { color: var(--flag); }
+
+/* ---- the trial ------------------------------------------------------- */
+
+.bar-track { height: 3px; background: var(--sunken); border-radius: 2px; margin: 2px 0 18px; }
+.bar-fill { height: 3px; background: var(--accent); border-radius: 2px; width: 0; transition: width 120ms linear; }
+
+.playrow { display: flex; gap: 10px; justify-content: center; margin: 14px 0 20px; }
+.playbtn {
+  min-width: 150px; padding: 16px 20px; font-size: 14px;
+  background: var(--sunken); border: 1px solid var(--rule); border-radius: var(--r); color: var(--ink);
+}
+.playbtn:hover { border-color: var(--ink-3); }
+.playbtn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-w); }
+
+.question { text-align: center; font-size: 15px; color: var(--ink); margin: 0 0 14px; }
+.answerrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+.answer { padding: 10px 18px; font-size: 13.5px; }
+.answer kbd { margin-left: 7px; }
+.trial .hint { text-align: center; margin: 0; }
+
+/* Hide everything except the trial while a run is in progress. */
+body.running nav.nav,
+body.running .view .card:not(.trial) { display: none !important; }
+
+</style>
 <!-- BUILD:HEAD-END -->
 </head>
-<body>
+<body data-view="instrument">
 <header>
   <h1>Suspectra</h1>
   <span class="sub">A tool for investigating consonance in 12-TET chords</span>
+  <nav class="nav">
+    <button type="button" class="tab on" data-view="instrument">Instrument</button>
+    <button type="button" class="tab" data-view="listening">Listening test</button>
+  </nav>
   <span class="byline">Jonas Techmanski</span>
 </header>
 
-<main class="page">
+<main class="page view on" id="viewInstrument">
   <section class="card readouts" aria-live="polite" aria-label="Current chord">
     <button type="button" class="primary" id="soundBtn" aria-pressed="false">Start sound</button>
     <div class="readout"><span class="label">Chord</span><span class="value" id="chordOut">–</span></div>
@@ -384,7 +458,7 @@ body.staging .key.sounding::after {
       </div>
     </div>
     <div class="stagebar" id="stageBar">
-      <span>Editing the next chord. The current one keeps sounding until you play it.</span>
+      <span>Editing the next chord, while the current one keeps sounding.</span>
       <span class="dim"><kbd>Enter</kbd> to play, <kbd>Esc</kbd> to cancel</span>
       <button type="button" class="i" data-info="next" aria-label="About the next chord">i</button>
     </div>
@@ -403,6 +477,76 @@ body.staging .key.sounding::after {
     <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
   </section>
 </main>
+
+<main class="page narrow view" id="viewListening">
+  <section class="card" aria-labelledby="setupTitle">
+    <div class="cardhead"><h2 id="setupTitle">Protocol</h2></div>
+    <div class="row">
+      <select id="protoPick">
+        <option value="protocols/pilot-smoothness.json">Pilot: one sound or two</option>
+        <option value="protocols/ab-smoothness.json">A/B: which is smoother</option>
+      </select>
+      <label class="filebtn">Open a file<input type="file" id="protoFile" accept=".json,application/json" hidden></label>
+      <span class="dim num" id="protoSource"></span>
+    </div>
+    <p class="hint num" id="protoFacts">loading</p>
+    <p class="hint" id="protoName"></p>
+    <div class="row">
+      <label for="participant">Participant</label>
+      <input type="text" id="participant" placeholder="id or initials" autocomplete="off">
+    </div>
+    <div class="row" id="prepareRow" style="display:none">
+      <button type="button" id="prepareBtn">Render and match stimuli</button>
+      <button type="button" id="startBtn" class="primary" disabled>Start the run</button>
+      <span class="dim num" id="prepareStatus"></span>
+    </div>
+  </section>
+
+  <section class="card" id="checkCard" style="display:none" aria-labelledby="checkTitle">
+    <div class="cardhead"><h2 id="checkTitle">Stimulus check</h2></div>
+    <p class="hint">Loudness before and after matching, the partials found in the rendered file against the partials asked for, and the strongest envelope fluctuation in two bands, 0.3 to 8 Hz and 8 to 40 Hz.</p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Condition</th><th>Notes</th><th>Mode</th>
+            <th>LUFS in</th><th>Gain dB</th><th>LUFS out</th><th>Peak dBFS</th>
+            <th>Partials</th><th>Worst ¢</th><th>Slow Hz</th><th>Fast Hz</th><th>Depth dB</th>
+          </tr>
+        </thead>
+        <tbody id="checkBody"></tbody>
+      </table>
+    </div>
+    <div class="row">
+      <button type="button" id="stimuliBtn">Export stimulus CSV</button>
+      <button type="button" id="wavBtn">Export first WAV</button>
+    </div>
+  </section>
+
+  <section class="card trial" id="trialCard" style="display:none" aria-labelledby="trialTitle">
+    <div class="cardhead">
+      <h2 id="trialTitle">Trial</h2>
+      <span class="dim num" id="progress"></span>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="progressBar"></div></div>
+    <div class="playrow" id="playRow"></div>
+    <p class="question" id="question"></p>
+    <div class="answerrow" id="answerRow"></div>
+  </section>
+
+  <section class="card" id="resultsCard" style="display:none" aria-labelledby="resultsTitle">
+    <div class="cardhead"><h2 id="resultsTitle">Run</h2></div>
+    <p class="hint num" id="resultsFacts"></p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Condition</th><th>Label</th><th>Answers</th><th>Counts</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+    <div class="row"><button type="button" id="responsesBtn" class="primary">Export responses CSV</button></div>
+  </section>
+</main>
+
 <script>
 /*
  * dissonance.js: sensory roughness
@@ -650,19 +794,11 @@ SP.optimizer = (function () {
   }
 
   /**
-   * Fused mode. Approximate the chord's fundamentals as small integer multiples
-   * n_k of one common fundamental F, then put harmonic n of note k on that
-   * note's own sub-series, at n * n_k * F. Every partial in the chord then lies
-   * on one harmonic series. The fundamentals stay in 12-TET, so each note ends
-   * up a few cents away from its own overtones.
-   */
-  /**
    * Smallest n1 whose series holds every interval in the chord, scored on the
    * error of the intervals between notes rather than the error of each note
    * against the lowest one. Two notes each 15 cents off in opposite directions
-   * are 30 cents apart, and a mistuned interval is what a listener hears: its
-   * partials, which used to nearly coincide, end up one step of the series
-   * apart and beat at F Hz.
+   * give an interval 30 cents wrong, and the partials of a mistuned interval
+   * end up one step of the series apart, which beats at F Hz.
    */
   function fusedSeries(f0s) {
     const lowest = Math.min.apply(null, f0s);
@@ -682,6 +818,13 @@ SP.optimizer = (function () {
     return { n1: best.n1, ints: best.ints, worst: best.worst, F: lowest / best.n1 };
   }
 
+  /**
+   * Fused mode. Approximate the chord's fundamentals as small integer multiples
+   * n_k of one common fundamental F, then put harmonic n of note k on that
+   * note's own sub-series, at n * n_k * F. Every partial in the chord then lies
+   * on one harmonic series. The fundamentals stay in 12-TET, so each note ends
+   * up a few cents away from its own overtones.
+   */
   function fused(notes, out, maxShift) {
     const f0s = notes.map(fundamental);
     const series = fusedSeries(f0s);
@@ -716,8 +859,8 @@ SP.optimizer = (function () {
 
     smooth(notes, out, maxShift, D);
 
-    // Coordinate descent only accepts improvements, so this should never fire.
-    // It is here because the contract is a promise about the returned chord.
+    // Coordinate descent only accepts improvements, so this is a guard on the
+    // contract rather than an expected path.
     const before = D.total(notes.map((n) => ({ freqs: n.freqs, amps: n.amps })));
     const after = D.total(out.map((freqs, k) => ({ freqs, amps: notes[k].amps })));
     if (!(after <= before)) return notes.map((n) => n.freqs.slice());
@@ -898,12 +1041,17 @@ SP.audio = (function () {
     }
   }
 
+  /** Suspend the context, used when the listening test takes over. */
+  function suspend() {
+    if (ctx && ctx.state === 'running') ctx.suspend();
+  }
+
   function setVolume(x) {
     volume = x;
     if (master) master.gain.setTargetAtTime(x, ctx.currentTime, 0.03);
   }
 
-  return { ensure, running, render, setVolume };
+  return { ensure, running, render, setVolume, suspend };
 })();
 
 </script>
@@ -1151,11 +1299,998 @@ SP.tests = {
 </script>
 <script>
 /*
+ * render.js: offline stimulus rendering (shell code)
+ *
+ * A trial plays a buffer that was synthesised before the run started, so every
+ * presentation of a condition is the same samples, and nothing in the audio
+ * path depends on the optimizer finishing in time.
+ *
+ * Synthesis is a direct sum of sines rather than Web Audio nodes, which keeps
+ * a render reproducible across machines and browsers. Phases come from a
+ * seeded generator, so coincident partials sum the same way every time.
+ */
+window.SP = window.SP || {};
+
+SP.render = (function () {
+  const DEFAULTS = { sampleRate: 48000, seconds: 3, fade: 0.03, phaseSeed: 1 };
+
+  /** mulberry32, chosen because it repeats exactly across runs. */
+  function seeded(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /**
+   * The partials a condition asks for, as the instrument would sound them.
+   * cond: { midis, partials, preset, brightness, consonance, mode, maxShift }
+   */
+  function partialsFor(cond) {
+    const midis = [...cond.midis].sort((a, b) => a - b);
+    const mode = cond.mode || 'off';
+    const maxShift = typeof cond.maxShift === 'number' ? cond.maxShift : 0.45;
+    const base = midis.map((m) => ({ midi: m, ...SP.timbre.base(m, cond.partials, cond.preset, cond.brightness / 100) }));
+
+    let optimum = base.map((n) => n.freqs.slice());
+    if (mode !== 'off' && base.length > 1 && SP.optimizer.implemented) {
+      const input = base.map((n) => ({ midi: n.midi, f0: n.freqs[0], freqs: n.freqs.slice(), amps: n.amps.slice() }));
+      optimum = SP.optimizer.optimize(input, { mode, maxShift, dissonance: SP.dissonance });
+    }
+
+    const c = (typeof cond.consonance === 'number' ? cond.consonance : 0) / 100;
+    return base.map((n, k) => ({
+      midi: n.midi,
+      amps: n.amps,
+      freqs: n.freqs.map((f, i) => f * Math.pow(optimum[k][i] / f, c)),
+      baseFreqs: n.freqs.slice(),
+    }));
+  }
+
+  /**
+   * Render one condition to mono samples. Partial gains follow the instrument:
+   * each note's partials sum to one, and the chord is divided by the square
+   * root of the note count. Anything at or above 0.45 of the sample rate is
+   * dropped rather than allowed to alias.
+   */
+  function renderChord(cond, opts) {
+    const o = Object.assign({}, DEFAULTS, opts || {});
+    const fs = o.sampleRate;
+    const n = Math.round(fs * (cond.seconds || o.seconds));
+    const out = new Float32Array(n);
+    const notes = partialsFor(cond);
+    const rand = seeded(typeof cond.phaseSeed === 'number' ? cond.phaseSeed : o.phaseSeed);
+    const voice = 1 / Math.sqrt(Math.max(1, notes.length));
+    const laid = [];
+
+    for (const note of notes) {
+      const sum = note.amps.reduce((a, b) => a + b, 0) || 1;
+      for (let i = 0; i < note.freqs.length; i++) {
+        const f = note.freqs[i];
+        const a = voice * note.amps[i] / sum;
+        const phase = rand() * 2 * Math.PI;
+        if (!(f > 0) || f >= fs * 0.45 || a <= 0) continue;
+        const w = 2 * Math.PI * f / fs;
+        for (let t = 0; t < n; t++) out[t] += a * Math.sin(w * t + phase);
+        laid.push({ midi: note.midi, harmonic: i + 1, freq: f, amp: a, baseFreq: note.baseFreqs[i] });
+      }
+    }
+
+    const fade = Math.max(1, Math.round((cond.fade || o.fade) * fs));
+    for (let t = 0; t < fade; t++) {
+      const w = 0.5 - 0.5 * Math.cos(Math.PI * t / fade);
+      out[t] *= w;
+      out[n - 1 - t] *= w;
+    }
+
+    return { samples: out, sampleRate: fs, partials: laid, notes };
+  }
+
+  /** Wrap samples for playback through an AudioContext. */
+  function toBuffer(ctx, samples, fs) {
+    const buf = ctx.createBuffer(1, samples.length, fs);
+    buf.copyToChannel(samples, 0);
+    return buf;
+  }
+
+  /** WAV bytes, for exporting a stimulus set or checking it in another tool. */
+  function toWav(samples, fs) {
+    const n = samples.length;
+    const buf = new ArrayBuffer(44 + n * 2);
+    const view = new DataView(buf);
+    const str = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); view.setUint32(4, 36 + n * 2, true); str(8, 'WAVE');
+    str(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, fs, true); view.setUint32(28, fs * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    str(36, 'data'); view.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  return { renderChord, partialsFor, toBuffer, toWav, seeded, DEFAULTS };
+})();
+
+</script>
+<script>
+/*
+ * loudness.js: ITU-R BS.1770-4 integrated loudness (shell code)
+ *
+ * Stimuli that differ in level are compared on level, so a listening test
+ * requires them matched.
+ *
+ * K-weighting is two biquads, a high shelf and a high pass, with the constants
+ * from the recommendation. Loudness is the gated mean square of the weighted
+ * signal: 400 ms blocks at 75% overlap, an absolute gate at -70 LUFS, then a
+ * relative gate 10 LU below the mean of what survived.
+ *
+ * Channel weights are 1.0 per channel, so a mono signal reads about 3 LU below
+ * the same signal carried on two channels. Matching is relative, so a constant
+ * offset does not matter as long as every stimulus is measured the same way.
+ */
+window.SP = window.SP || {};
+
+SP.loudness = (function () {
+  const SHELF = { f0: 1681.974450955533, G: 3.999843853973347, Q: 0.7071752369554196 };
+  const HPF = { f0: 38.13547087602444, Q: 0.5003270373238773 };
+
+  /** RBJ high shelf, normalised so a0 = 1. */
+  function highShelf(fs) {
+    const A = Math.pow(10, SHELF.G / 40);
+    const w0 = 2 * Math.PI * SHELF.f0 / fs;
+    const c = Math.cos(w0);
+    const alpha = Math.sin(w0) / (2 * SHELF.Q);
+    const s = 2 * Math.sqrt(A) * alpha;
+    const a0 = (A + 1) - (A - 1) * c + s;
+    return {
+      b0: A * ((A + 1) + (A - 1) * c + s) / a0,
+      b1: -2 * A * ((A - 1) + (A + 1) * c) / a0,
+      b2: A * ((A + 1) + (A - 1) * c - s) / a0,
+      a1: 2 * ((A - 1) - (A + 1) * c) / a0,
+      a2: ((A + 1) - (A - 1) * c - s) / a0,
+    };
+  }
+
+  /** RBJ high pass, normalised so a0 = 1. */
+  function highPass(fs) {
+    const w0 = 2 * Math.PI * HPF.f0 / fs;
+    const c = Math.cos(w0);
+    const alpha = Math.sin(w0) / (2 * HPF.Q);
+    const a0 = 1 + alpha;
+    return {
+      b0: (1 + c) / 2 / a0,
+      b1: -(1 + c) / a0,
+      b2: (1 + c) / 2 / a0,
+      a1: -2 * c / a0,
+      a2: (1 - alpha) / a0,
+    };
+  }
+
+  function biquad(x, f) {
+    const y = new Float32Array(x.length);
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let n = 0; n < x.length; n++) {
+      const v = f.b0 * x[n] + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2;
+      x2 = x1; x1 = x[n];
+      y2 = y1; y1 = v;
+      y[n] = v;
+    }
+    return y;
+  }
+
+  /** K-weighted copy of one channel. */
+  function kWeight(samples, fs) {
+    return biquad(biquad(samples, highShelf(fs)), highPass(fs));
+  }
+
+  /**
+   * Integrated loudness in LUFS. `channels` is one Float32Array or an array of
+   * them. Signals shorter than one 400 ms block fall back to an ungated
+   * measurement, which is what short stimuli need.
+   */
+  function integrated(channels, fs) {
+    const chans = (channels instanceof Float32Array ? [channels] : channels).map((c) => kWeight(c, fs));
+    const block = Math.round(0.4 * fs);
+    const step = Math.round(0.1 * fs);
+    const n = chans[0].length;
+
+    const meanSquare = (from, to) => chans.map((c) => {
+      let sum = 0;
+      for (let i = from; i < to; i++) sum += c[i] * c[i];
+      return sum / (to - from);
+    });
+
+    const level = (z) => -0.691 + 10 * Math.log10(z.reduce((a, b) => a + b, 0) || 1e-30);
+
+    if (n < block) return level(meanSquare(0, n));
+
+    const blocks = [];
+    for (let start = 0; start + block <= n; start += step) blocks.push(meanSquare(start, start + block));
+
+    const loud = blocks.map(level);
+    const abs = blocks.filter((_, i) => loud[i] > -70);
+    if (!abs.length) return -Infinity;
+
+    const mean = (list) => list[0].map((_, ch) => list.reduce((a, b) => a + b[ch], 0) / list.length);
+    const relGate = level(mean(abs)) - 10;
+    const kept = abs.filter((_, i) => level(abs[i]) > relGate);
+    return level(mean(kept.length ? kept : abs));
+  }
+
+  /** Peak sample as dBFS, to catch a match that would clip. */
+  function peakDbfs(channels) {
+    const chans = channels instanceof Float32Array ? [channels] : channels;
+    let peak = 0;
+    for (const c of chans) for (let i = 0; i < c.length; i++) peak = Math.max(peak, Math.abs(c[i]));
+    return 20 * Math.log10(peak || 1e-30);
+  }
+
+  /**
+   * Scale a signal to a target loudness, in place on a copy. Returns the new
+   * samples, the measured loudness before and after, the gain applied, and
+   * whether the gain had to be held back to keep the peak under `ceilingDb`.
+   */
+  function normalize(samples, fs, targetLufs, ceilingDb) {
+    const ceiling = typeof ceilingDb === 'number' ? ceilingDb : -1;
+    const before = integrated(samples, fs);
+    let gainDb = targetLufs - before;
+    const headroom = ceiling - peakDbfs(samples);
+    const limited = gainDb > headroom;
+    if (limited) gainDb = headroom;
+    const gain = Math.pow(10, gainDb / 20);
+    const out = new Float32Array(samples.length);
+    for (let i = 0; i < samples.length; i++) out[i] = samples[i] * gain;
+    return { samples: out, before, after: integrated(out, fs), gainDb, limited, peakDbfs: peakDbfs(out) };
+  }
+
+  return { integrated, peakDbfs, normalize, kWeight };
+})();
+
+</script>
+<script>
+/*
+ * analysis.js: measurement of rendered stimuli (shell code)
+ *
+ * Two jobs, both of which use tools from ECE 401:
+ *   verifyPartials  windowed spectrum, peak picking, and a comparison against
+ *                   the frequencies the optimizer asked for (weeks 8 and 9)
+ *   beats           short-time energy, then the rate of its slowest strong
+ *                   fluctuation (week 10)
+ *
+ * verifyPartials is a check on the synthesis, and beats gives a measurement
+ * of the slow beating between 12-TET fifths.
+ */
+window.SP = window.SP || {};
+
+SP.analysis = (function () {
+  /** In-place iterative radix-2 FFT on split real and imaginary arrays. */
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        let t = re[i]; re[i] = re[j]; re[j] = t;
+        t = im[i]; im[i] = im[j]; im[j] = t;
+      }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len;
+      const wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < len / 2; k++) {
+          const ur = re[i + k], ui = im[i + k];
+          const vr = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci;
+          const vi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+          re[i + k] = ur + vr; im[i + k] = ui + vi;
+          re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi;
+          const nr = cr * wr - ci * wi;
+          ci = cr * wi + ci * wr;
+          cr = nr;
+        }
+      }
+    }
+  }
+
+  function hann(n) {
+    const w = new Float64Array(n);
+    for (let i = 0; i < n; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n);
+    return w;
+  }
+
+  const nextPow2 = (n) => Math.pow(2, Math.ceil(Math.log2(n)));
+
+  /**
+   * Magnitude spectrum of one Hann-windowed frame taken from the middle of the
+   * signal. A 2^16 frame at 48 kHz is 1.37 s long, which resolves partials
+   * about 1 Hz apart.
+   */
+  function spectrum(samples, fs, opts) {
+    const o = opts || {};
+    const size = Math.min(nextPow2(o.size || 131072), nextPow2(samples.length));
+    const start = Math.max(0, Math.floor((samples.length - size) / 2));
+    const w = hann(size);
+    const re = new Float64Array(size);
+    const im = new Float64Array(size);
+    for (let i = 0; i < size; i++) re[i] = (samples[start + i] || 0) * w[i];
+    fft(re, im);
+    const half = size / 2;
+    const mag = new Float64Array(half);
+    for (let i = 0; i < half; i++) mag[i] = Math.hypot(re[i], im[i]) * 2 / size;
+    return { mag, binHz: fs / size, size };
+  }
+
+  /**
+   * Peaks of a magnitude spectrum, with a parabolic fit across the three bins
+   * around each maximum so the estimate beats the bin spacing.
+   */
+  function peaks(spec, opts) {
+    const o = opts || {};
+    const floor = (o.floor || 0.001) * Math.max.apply(null, Array.from(spec.mag));
+    const found = [];
+    for (let i = 1; i < spec.mag.length - 1; i++) {
+      const y1 = spec.mag[i - 1], y2 = spec.mag[i], y3 = spec.mag[i + 1];
+      if (y2 <= y1 || y2 < y3 || y2 < floor) continue;
+      const denom = y1 - 2 * y2 + y3;
+      const delta = denom === 0 ? 0 : 0.5 * (y1 - y3) / denom;
+      found.push({ freq: (i + delta) * spec.binHz, amp: y2 - 0.25 * (y1 - y3) * delta });
+    }
+    return found.sort((a, b) => b.amp - a.amp).slice(0, o.limit || 200).sort((a, b) => a.freq - b.freq);
+  }
+
+  /**
+   * Compare what was rendered against what was asked for. Each expected
+   * partial is matched to the nearest peak, and reported with its error in
+   * cents. `tolCents` decides what counts as found.
+   */
+  function verifyPartials(samples, fs, expected, opts) {
+    const o = opts || {};
+    const tol = o.tolCents || 10;
+    const spec = spectrum(samples, fs, o);
+    const found = peaks(spec, o);
+    const rows = expected.map((p) => {
+      let best = null, bestErr = Infinity;
+      for (const q of found) {
+        const err = Math.abs(1200 * Math.log2(q.freq / p.freq));
+        if (err < bestErr) { bestErr = err; best = q; }
+      }
+      return { expected: p.freq, measured: best ? best.freq : null, cents: best ? bestErr : null, ok: !!best && bestErr <= tol };
+    });
+    return {
+      rows,
+      binHz: spec.binHz,
+      matched: rows.filter((r) => r.ok).length,
+      total: rows.length,
+      worstCents: rows.reduce((a, r) => Math.max(a, r.cents === null ? Infinity : r.cents), 0),
+      peaksFound: found.length,
+    };
+  }
+
+  /** Short-time energy in dB, one value per hop. */
+  function shortTimeEnergy(samples, fs, opts) {
+    const o = opts || {};
+    const frame = Math.round((o.frameMs || 10) / 1000 * fs);
+    const hop = Math.round((o.hopMs || 2.5) / 1000 * fs);
+    const out = [];
+    for (let start = 0; start + frame <= samples.length; start += hop) {
+      let sum = 0;
+      for (let i = start; i < start + frame; i++) sum += samples[i] * samples[i];
+      out.push(10 * Math.log10(sum / frame + 1e-20));
+    }
+    return { db: out, rate: fs / hop, frameMs: o.frameMs || 10, hopMs: o.hopMs || 2.5 };
+  }
+
+  /**
+   * Rate of the strongest fluctuation of the energy envelope, searched between
+   * `minHz` and `maxHz`. The envelope is detrended and windowed, so what comes
+   * back is modulation rate rather than overall level.
+   */
+  function beats(samples, fs, opts) {
+    const o = opts || {};
+    const env = shortTimeEnergy(samples, fs, o);
+    // Trim both ends, since the fades are level changes rather than beating.
+    const skip = Math.round(env.rate * (o.skipS || 0.15));
+    const x = env.db.slice(skip, Math.max(skip, env.db.length - skip));
+    if (x.length < 16) return { rateHz: null, depthDb: 0, envelope: env };
+    const mean = x.reduce((a, b) => a + b, 0) / x.length;
+    const size = nextPow2(x.length);
+    const w = hann(x.length);
+    const re = new Float64Array(size);
+    const im = new Float64Array(size);
+    for (let i = 0; i < x.length; i++) re[i] = (x[i] - mean) * w[i];
+    fft(re, im);
+    const binHz = env.rate / size;
+    // ceil, so a coarse envelope spectrum never reports a rate below minHz
+    const lo = Math.max(1, Math.ceil((o.minHz || 0.3) / binHz));
+    const hi = Math.min(size / 2 - 1, Math.ceil((o.maxHz || 40) / binHz));
+    if (lo > hi) return { rateHz: null, periodS: null, depthDb: 0, envelope: env };
+    let best = lo, bestMag = -1;
+    for (let i = lo; i <= hi; i++) {
+      const m = Math.hypot(re[i], im[i]);
+      if (m > bestMag) { bestMag = m; best = i; }
+    }
+    const sorted = [...x].sort((a, b) => a - b);
+    const pct = (p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+    return {
+      rateHz: best * binHz,
+      periodS: 1 / (best * binHz),
+      depthDb: pct(0.95) - pct(0.05),
+      envelope: env,
+    };
+  }
+
+  return { spectrum, peaks, verifyPartials, shortTimeEnergy, beats, fft };
+})();
+
+</script>
+<script>
+/*
+ * protocol.js: a listening test as data (shell code)
+ *
+ * An experiment is a JSON file holding conditions, a task, repetitions, catch
+ * trials and a seed, so a new design is written as a new protocol file.
+ *
+ * Shape:
+ * {
+ *   "name": "...",
+ *   "task": "single" | "ab",
+ *   "question": "...",
+ *   "choices": ["...", "..."],         // single: the answers; ab: the two verdicts
+ *   "seed": 20260918,
+ *   "repetitions": 2,
+ *   "targetLufs": -23,
+ *   "seconds": 3,
+ *   "defaults": { partials, preset, brightness, consonance, mode, maxShift },
+ *   "conditions": [{ "id", "label", "midis": [..], ...overrides }],
+ *   "pairs": [["a", "b"], ...],        // ab only; "allPairs" builds them all
+ *   "catch": { "kind": "repeat" | "identical", "count": 4 }
+ * }
+ *
+ * `label` appears in the exported data and is never shown in the runner.
+ */
+window.SP = window.SP || {};
+
+SP.protocol = (function () {
+  function seeded(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffle(list, rand) {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      const t = out[i]; out[i] = out[j]; out[j] = t;
+    }
+    return out;
+  }
+
+  /** Fill in every condition from `defaults`, and fail loudly on a bad file. */
+  function validate(p) {
+    const problems = [];
+    if (!p || typeof p !== 'object') problems.push('protocol is not an object');
+    if (!p.conditions || !p.conditions.length) problems.push('no conditions');
+    if (p.task !== 'single' && p.task !== 'ab') problems.push(`task must be "single" or "ab", got ${JSON.stringify(p.task)}`);
+    if (!Array.isArray(p.choices) || p.choices.length < 2) problems.push('choices needs at least two entries');
+    const ids = new Set();
+    (p.conditions || []).forEach((c, i) => {
+      if (!c.id) problems.push(`condition ${i} has no id`);
+      if (ids.has(c.id)) problems.push(`duplicate condition id ${c.id}`);
+      ids.add(c.id);
+      if (!Array.isArray(c.midis) || !c.midis.length) problems.push(`condition ${c.id} has no midis`);
+    });
+    if (p.task === 'ab' && p.pairs && p.pairs !== 'allPairs') {
+      p.pairs.forEach((pair, i) => {
+        if (!Array.isArray(pair) || pair.length !== 2) problems.push(`pair ${i} is not two ids`);
+        else pair.forEach((id) => { if (!ids.has(id)) problems.push(`pair ${i} names unknown condition ${id}`); });
+      });
+    }
+    if (problems.length) throw new Error(problems.join('; '));
+
+    const defaults = Object.assign(
+      { partials: 8, preset: 'organ', brightness: 55, consonance: 0, mode: 'off', maxShift: 0.45 },
+      p.defaults || {}
+    );
+    const conditions = p.conditions.map((c) => Object.assign({}, defaults, c, {
+      seconds: c.seconds || p.seconds || 3,
+      phaseSeed: typeof c.phaseSeed === 'number' ? c.phaseSeed : (p.seed || 1),
+    }));
+    return Object.assign({}, p, {
+      seed: p.seed || 1,
+      repetitions: p.repetitions || 1,
+      targetLufs: typeof p.targetLufs === 'number' ? p.targetLufs : -23,
+      conditions,
+    });
+  }
+
+  /**
+   * Expand a protocol into the trial list. Order is shuffled with the seed, so
+   * the same file and seed give the same run, and a different seed gives a
+   * different order with the same content. In `ab` trials the side each
+   * condition lands on is drawn per trial.
+   */
+  function build(protocolIn) {
+    const p = validate(protocolIn);
+    const rand = seeded(p.seed);
+    const items = [];
+
+    if (p.task === 'single') {
+      for (let rep = 0; rep < p.repetitions; rep++) {
+        for (const c of p.conditions) items.push({ kind: 'test', rep, stimuli: [c.id] });
+      }
+    } else {
+      let pairs = p.pairs;
+      if (!pairs || pairs === 'allPairs') {
+        pairs = [];
+        for (let i = 0; i < p.conditions.length; i++) {
+          for (let j = i + 1; j < p.conditions.length; j++) pairs.push([p.conditions[i].id, p.conditions[j].id]);
+        }
+      }
+      for (let rep = 0; rep < p.repetitions; rep++) {
+        for (const pair of pairs) items.push({ kind: 'test', rep, stimuli: pair.slice() });
+      }
+    }
+
+    // Catch trials. "identical" asks for a verdict between one stimulus and
+    // itself. "repeat" presents a condition again, so the two answers can be
+    // compared for consistency.
+    const c = p.catch || {};
+    const count = c.count || 0;
+    for (let i = 0; i < count; i++) {
+      const pick = p.conditions[Math.floor(rand() * p.conditions.length)];
+      if (p.task === 'ab' && (c.kind || 'identical') === 'identical') {
+        items.push({ kind: 'catch', catchKind: 'identical', rep: 0, stimuli: [pick.id, pick.id] });
+      } else {
+        items.push({ kind: 'catch', catchKind: 'repeat', rep: 0, stimuli: p.task === 'ab' ? [pick.id, pick.id] : [pick.id] });
+      }
+    }
+
+    const trials = shuffle(items, rand).map((t, i) => {
+      const stimuli = t.stimuli.length === 2 && rand() < 0.5 ? [t.stimuli[1], t.stimuli[0]] : t.stimuli.slice();
+      return Object.assign({}, t, { index: i + 1, stimuli });
+    });
+
+    const used = new Set();
+    trials.forEach((t) => t.stimuli.forEach((id) => used.add(id)));
+    return {
+      protocol: p,
+      trials,
+      conditionsUsed: p.conditions.filter((c2) => used.has(c2.id)),
+    };
+  }
+
+  return { build, validate, seeded, shuffle };
+})();
+
+</script>
+<script>
+/*
+ * experiment.js: the listening-test runner (shell code)
+ *
+ * Order of operations, which is also the order of the cards on the page:
+ *   1. load a protocol
+ *   2. render every condition it uses, match the loudness, measure the result
+ *   3. run the trials blind, with the condition behind each button hidden
+ *   4. export the responses and the stimulus measurements as CSV
+ *
+ * No synthesis happens during a trial, since everything a listener hears was
+ * rendered and measured in step 2.
+ */
+window.SP = window.SP || {};
+
+SP.experiment = (function () {
+  const $ = (id) => document.getElementById(id);
+
+  const run = {
+    protocol: null,
+    built: null,
+    stimuli: new Map(),   // condition id -> { samples, buffer, loudness, check, beats }
+    responses: [],
+    index: 0,
+    trialShownAt: 0,
+    plays: [],
+    ctx: null,
+    source: null,
+    participant: '',
+  };
+
+  const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+  const fmt = (v, digits) => (v === null || v === undefined || !isFinite(v) ? '–' : v.toFixed(digits === undefined ? 1 : digits));
+
+  // ---------------------------------------------------------------- protocol
+  function loadProtocol(obj, source) {
+    run.protocol = obj;
+    run.built = SP.protocol.build(obj);
+    run.stimuli.clear();
+    run.responses = [];
+    const p = run.built.protocol;
+    $('protoName').textContent = p.name || '(unnamed)';
+    $('protoSource').textContent = source || '';
+    $('protoFacts').textContent = [
+      `task ${p.task}`,
+      `${run.built.conditionsUsed.length} conditions`,
+      `${run.built.trials.length} trials`,
+      `${run.built.trials.filter((t) => t.kind === 'catch').length} catch`,
+      `seed ${p.seed}`,
+      `${p.targetLufs} LUFS`,
+      `${p.seconds || 3} s`,
+    ].join(' · ');
+    $('question').textContent = p.question || '';
+    show('prepareRow', true);
+    $('prepareBtn').disabled = false;
+    $('startBtn').disabled = true;
+    show('checkCard', false);
+    show('trialCard', false);
+    show('resultsCard', false);
+  }
+
+  async function loadFromUrl(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    loadProtocol(await res.json(), url);
+  }
+
+  function loadFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        loadProtocol(JSON.parse(reader.result), file.name);
+      } catch (e) {
+        $('protoFacts').textContent = `could not read ${file.name}: ${e.message}`;
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------------------------------------------------------------- stimuli
+  async function prepare() {
+    const p = run.built.protocol;
+    const ctx = audioContext();
+    const rows = [];
+    $('prepareBtn').disabled = true;
+    show('checkCard', true);
+    $('checkBody').innerHTML = '';
+
+    for (let i = 0; i < run.built.conditionsUsed.length; i++) {
+      const cond = run.built.conditionsUsed[i];
+      $('prepareStatus').textContent = `rendering ${i + 1} of ${run.built.conditionsUsed.length}`;
+      await new Promise((r) => setTimeout(r, 0));   // let the status paint
+
+      const rendered = SP.render.renderChord(cond, { sampleRate: ctx.sampleRate });
+      const matched = SP.loudness.normalize(rendered.samples, rendered.sampleRate, p.targetLufs);
+      const check = SP.analysis.verifyPartials(matched.samples, rendered.sampleRate, rendered.partials, { tolCents: 5 });
+      // Two bands: slow beating, which is audible as swelling, and the faster
+      // fluctuation that the roughness model is built around.
+      const slow = SP.analysis.beats(matched.samples, rendered.sampleRate, { minHz: 0.3, maxHz: 8 });
+      const fast = SP.analysis.beats(matched.samples, rendered.sampleRate, { minHz: 8, maxHz: 40 });
+      const beat = { slow, fast, rateHz: slow.rateHz, depthDb: slow.depthDb };
+
+      run.stimuli.set(cond.id, {
+        cond,
+        samples: matched.samples,
+        sampleRate: rendered.sampleRate,
+        buffer: SP.render.toBuffer(ctx, matched.samples, rendered.sampleRate),
+        loudness: matched,
+        check,
+        beat,
+        partials: rendered.partials,
+      });
+      rows.push(cond.id);
+      renderCheckRow(cond, run.stimuli.get(cond.id));
+    }
+
+    $('prepareStatus').textContent = run.participant
+      ? `${rows.length} stimuli ready`
+      : `${rows.length} stimuli ready, name the participant to start`;
+    $('startBtn').disabled = !run.participant;
+  }
+
+  function renderCheckRow(cond, s) {
+    const tr = document.createElement('tr');
+    const cells = [
+      cond.id,
+      cond.midis.length,
+      `${cond.mode}${cond.mode === 'off' ? '' : ' ' + cond.consonance}`,
+      fmt(s.loudness.before),
+      fmt(s.loudness.gainDb) + (s.loudness.limited ? ' *' : ''),
+      fmt(s.loudness.after),
+      fmt(s.loudness.peakDbfs),
+      `${s.check.matched}/${s.check.total}`,
+      fmt(s.check.worstCents, 2),
+      s.beat.slow.rateHz ? fmt(s.beat.slow.rateHz, 2) : '–',
+      s.beat.fast.rateHz ? fmt(s.beat.fast.rateHz, 1) : '–',
+      fmt(s.beat.depthDb, 1),
+    ];
+    cells.forEach((v, i) => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i > 2) td.className = 'num';
+      tr.appendChild(td);
+    });
+    if (s.check.matched < s.check.total) tr.classList.add('bad');
+    $('checkBody').appendChild(tr);
+  }
+
+  // ---------------------------------------------------------------- playback
+  function audioContext() {
+    if (!run.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      run.ctx = new AC();
+    }
+    if (run.ctx.state === 'suspended') run.ctx.resume();
+    return run.ctx;
+  }
+
+  function stop() {
+    if (run.source) {
+      try { run.source.stop(); } catch (e) { /* already ended */ }
+      run.source = null;
+    }
+  }
+
+  function play(slot) {
+    const trial = run.built.trials[run.index];
+    if (!trial) return;
+    const id = trial.stimuli[slot];
+    const s = run.stimuli.get(id);
+    if (!s) return;
+    const ctx = audioContext();
+    stop();
+    const src = ctx.createBufferSource();
+    src.buffer = s.buffer;
+    src.connect(ctx.destination);
+    src.start();
+    run.source = src;
+    run.plays[slot] = (run.plays[slot] || 0) + 1;
+    document.querySelectorAll('.playbtn').forEach((b, i) => b.classList.toggle('on', i === slot));
+    src.onended = () => { document.querySelectorAll('.playbtn').forEach((b) => b.classList.remove('on')); };
+  }
+
+  // ---------------------------------------------------------------- trials
+  function start() {
+    audioContext();
+    run.index = 0;
+    run.responses = [];
+    show('trialCard', true);
+    show('resultsCard', false);
+    show('checkCard', false);
+    document.body.classList.add('running');
+    showTrial();
+  }
+
+  function showTrial() {
+    const p = run.built.protocol;
+    const trial = run.built.trials[run.index];
+    if (!trial) return finish();
+
+    run.plays = [];
+    run.trialShownAt = performance.now();
+    $('progress').textContent = `Trial ${run.index + 1} of ${run.built.trials.length}`;
+    $('progressBar').style.width = `${(run.index / run.built.trials.length) * 100}%`;
+
+    const plays = $('playRow');
+    plays.innerHTML = '';
+    trial.stimuli.forEach((id, slot) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'playbtn';
+      b.textContent = trial.stimuli.length === 1 ? 'Play' : `Sound ${slot + 1}`;
+      b.addEventListener('click', () => play(slot));
+      plays.appendChild(b);
+    });
+
+    const answers = $('answerRow');
+    answers.innerHTML = '';
+    p.choices.forEach((choice, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'answer';
+      b.innerHTML = `${choice} <kbd>${i + 1}</kbd>`;
+      b.addEventListener('click', () => answer(i));
+      answers.appendChild(b);
+    });
+
+    $('question').textContent = p.question || '';
+    play(0);
+  }
+
+  function answer(choiceIndex) {
+    const p = run.built.protocol;
+    const trial = run.built.trials[run.index];
+    if (!trial) return;
+    run.responses.push({
+      trial: trial.index,
+      kind: trial.kind,
+      catchKind: trial.catchKind || '',
+      rep: trial.rep,
+      stimuli: trial.stimuli.slice(),
+      choiceIndex,
+      choice: p.choices[choiceIndex],
+      rtMs: Math.round(performance.now() - run.trialShownAt),
+      plays: trial.stimuli.map((_, i) => run.plays[i] || 0),
+      at: new Date().toISOString(),
+    });
+    stop();
+    run.index += 1;
+    showTrial();
+  }
+
+  function finish() {
+    stop();
+    document.body.classList.remove('running');
+    show('trialCard', false);
+    show('checkCard', true);
+    show('resultsCard', true);
+    $('progressBar').style.width = '100%';
+
+    const p = run.built.protocol;
+    const byCondition = new Map();
+    run.responses.forEach((r) => {
+      r.stimuli.forEach((id) => {
+        if (!byCondition.has(id)) byCondition.set(id, []);
+        byCondition.get(id).push(r.choiceIndex);
+      });
+    });
+
+    const body = $('resultsBody');
+    body.innerHTML = '';
+    run.built.conditionsUsed.forEach((c) => {
+      const answers = byCondition.get(c.id) || [];
+      const counts = p.choices.map((_, i) => answers.filter((a) => a === i).length);
+      const tr = document.createElement('tr');
+      [c.id, c.label || '', answers.length, counts.join(' / ')].forEach((v, i) => {
+        const td = document.createElement('td');
+        td.textContent = v;
+        if (i > 1) td.className = 'num';
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+
+    const catches = run.responses.filter((r) => r.kind === 'catch');
+    const repeats = new Map();
+    run.responses.forEach((r) => {
+      const key = r.stimuli.join('+');
+      if (!repeats.has(key)) repeats.set(key, []);
+      repeats.get(key).push(r.choiceIndex);
+    });
+    let agree = 0, pairs = 0;
+    repeats.forEach((list) => {
+      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) { pairs++; if (list[i] === list[j]) agree++; }
+    });
+    $('resultsFacts').textContent = [
+      `${run.responses.length} responses`,
+      `${catches.length} catch trials`,
+      pairs ? `repeat agreement ${Math.round((agree / pairs) * 100)}%` : 'no repeats',
+      `median RT ${median(run.responses.map((r) => r.rtMs))} ms`,
+    ].join(' · ');
+  }
+
+  function median(xs) {
+    if (!xs.length) return 0;
+    const s = [...xs].sort((a, b) => a - b);
+    return Math.round(s[Math.floor(s.length / 2)]);
+  }
+
+  // ---------------------------------------------------------------- export
+  function csvEscape(v) {
+    const s = String(v === null || v === undefined ? '' : v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function download(name, rows) {
+    const text = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function responsesCsv() {
+    const p = run.built.protocol;
+    const rows = [['participant', 'protocol', 'seed', 'task', 'trial', 'kind', 'catch_kind', 'repetition',
+      'stimulus_1', 'stimulus_2', 'label_1', 'label_2', 'response_index', 'response', 'rt_ms', 'plays_1', 'plays_2', 'timestamp']];
+    const labelOf = (id) => {
+      const c = run.built.conditionsUsed.find((x) => x.id === id);
+      return c ? (c.label || '') : '';
+    };
+    run.responses.forEach((r) => rows.push([
+      run.participant, p.name, p.seed, p.task, r.trial, r.kind, r.catchKind, r.rep,
+      r.stimuli[0] || '', r.stimuli[1] || '', labelOf(r.stimuli[0]), r.stimuli[1] ? labelOf(r.stimuli[1]) : '',
+      r.choiceIndex, r.choice, r.rtMs, r.plays[0] || 0, r.plays[1] || 0, r.at,
+    ]));
+    download(`suspectra-responses-${stamp()}.csv`, rows);
+  }
+
+  function stimuliCsv() {
+    const rows = [['condition', 'label', 'midis', 'mode', 'consonance', 'partials_per_note',
+      'lufs_before', 'gain_db', 'gain_limited', 'lufs_after', 'peak_dbfs',
+      'partials_expected', 'partials_matched', 'worst_cents', 'beat_slow_hz', 'beat_fast_hz', 'beat_depth_db']];
+    run.stimuli.forEach((s, id) => rows.push([
+      id, s.cond.label || '', s.cond.midis.join(' '), s.cond.mode, s.cond.consonance, s.cond.partials,
+      s.loudness.before.toFixed(2), s.loudness.gainDb.toFixed(2), s.loudness.limited ? 'yes' : 'no',
+      s.loudness.after.toFixed(2), s.loudness.peakDbfs.toFixed(2),
+      s.check.total, s.check.matched, isFinite(s.check.worstCents) ? s.check.worstCents.toFixed(3) : '',
+      s.beat.slow.rateHz ? s.beat.slow.rateHz.toFixed(3) : '',
+      s.beat.fast.rateHz ? s.beat.fast.rateHz.toFixed(3) : '',
+      s.beat.depthDb.toFixed(2),
+    ]));
+    download(`suspectra-stimuli-${stamp()}.csv`, rows);
+  }
+
+  function wavZipHint() {
+    // One file at a time, which avoids a zip dependency.
+    const trial = run.built.conditionsUsed[0];
+    const s = run.stimuli.get(trial.id);
+    if (!s) return;
+    const url = URL.createObjectURL(SP.render.toWav(s.samples, s.sampleRate));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trial.id}.wav`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  // ---------------------------------------------------------------- wiring
+  function boot() {
+    $('participant').addEventListener('input', (e) => {
+      run.participant = e.target.value.trim();
+      $('startBtn').disabled = !run.participant || !run.stimuli.size;
+    });
+    $('protoPick').addEventListener('change', (e) => {
+      loadFromUrl(e.target.value).catch((err) => { $('protoFacts').textContent = err.message; });
+    });
+    $('protoFile').addEventListener('change', (e) => { if (e.target.files[0]) loadFromFile(e.target.files[0]); });
+    $('prepareBtn').addEventListener('click', prepare);
+    $('startBtn').addEventListener('click', start);
+    $('responsesBtn').addEventListener('click', responsesCsv);
+    $('stimuliBtn').addEventListener('click', stimuliCsv);
+    $('wavBtn').addEventListener('click', wavZipHint);
+
+    window.addEventListener('keydown', (e) => {
+      if (document.body.dataset.view !== 'listening') return;
+      if (!document.body.classList.contains('running')) return;
+      const trial = run.built && run.built.trials[run.index];
+      if (!trial) return;
+      if (e.key === ' ') { e.preventDefault(); play(0); return; }
+      const n = Number(e.key);
+      if (!n) return;
+      if (trial.stimuli.length === 2 && (e.shiftKey || e.altKey)) { play(n - 1); return; }
+      if (n <= run.built.protocol.choices.length) answer(n - 1);
+    });
+
+    loadFromUrl($('protoPick').value).catch((err) => {
+      $('protoFacts').textContent = `Open the page over a local server to load the bundled protocol, or choose a file. (${err.message})`;
+    });
+  }
+
+  return { boot, loadProtocol, prepare, start, run };
+})();
+
+</script>
+<script>
+/*
  * app.js: state, controls, keyboard, MIDI (shell code)
  *
- * Two parameter sets exist at once. `state` is what is sounding. `staged` is
- * the chord being prepared, which the controls and the keyboard edit while the
- * old one keeps playing, until it is played or thrown away.
+ * Two parameter sets exist at once: `state`, which is sounding, and `staged`,
+ * the chord being prepared. The controls and the keyboard edit `staged` while
+ * `state` keeps playing, until the staged chord is played or discarded.
  */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -1425,10 +2560,34 @@ SP.tests = {
     drawCurve();
   }
 
+  // ---------------------------------------------------------------- views
+  /** The instrument and the listening test are two views of one page. */
+  function showView(name) {
+    document.body.dataset.view = name;
+    document.querySelectorAll('nav.nav .tab').forEach((t) => t.classList.toggle('on', t.dataset.view === name));
+    $('viewInstrument').classList.toggle('on', name === 'instrument');
+    $('viewListening').classList.toggle('on', name === 'listening');
+    closeInfo();
+    // Silence the instrument so it cannot sound under a trial.
+    if (name === 'listening') SP.audio.suspend();
+    if (location.hash.slice(1) !== name) history.replaceState(null, '', name === 'instrument' ? location.pathname : '#listening');
+  }
+
+  function bindViews() {
+    document.querySelectorAll('nav.nav .tab').forEach((t) => {
+      t.addEventListener('click', () => showView(t.dataset.view));
+    });
+    window.addEventListener('hashchange', () => showView(location.hash === '#listening' ? 'listening' : 'instrument'));
+    if (location.hash === '#listening') showView('listening');
+  }
+
+  const onInstrument = () => document.body.dataset.view === 'instrument';
+
   // ---------------------------------------------------------------- hotkeys
   function bindKeys() {
     window.addEventListener('keydown', (e) => {
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!onInstrument()) return;   // 1 and 2 answer trials on the other view
       if (e.key === '1' || e.key === '2') {
         const want = e.key === '1' ? 'smooth' : 'fused';
         if (punch !== want) { punch = want; update(); }
@@ -1560,6 +2719,8 @@ SP.tests = {
   bindControls();
   bindKeys();
   bindInfo();
+  bindViews();
+  SP.experiment.boot();
   update();
   drawCurve();
   const ro = new ResizeObserver(() => { SP.views.spectrum($('spectrum'), last.base, last.shown); drawCurve(); });

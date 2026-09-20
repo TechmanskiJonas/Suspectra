@@ -158,19 +158,11 @@ SP.optimizer = (function () {
   }
 
   /**
-   * Fused mode. Approximate the chord's fundamentals as small integer multiples
-   * n_k of one common fundamental F, then put harmonic n of note k on that
-   * note's own sub-series, at n * n_k * F. Every partial in the chord then lies
-   * on one harmonic series. The fundamentals stay in 12-TET, so each note ends
-   * up a few cents away from its own overtones.
-   */
-  /**
    * Smallest n1 whose series holds every interval in the chord, scored on the
    * error of the intervals between notes rather than the error of each note
    * against the lowest one. Two notes each 15 cents off in opposite directions
-   * are 30 cents apart, and a mistuned interval is what a listener hears: its
-   * partials, which used to nearly coincide, end up one step of the series
-   * apart and beat at F Hz.
+   * give an interval 30 cents wrong, and the partials of a mistuned interval
+   * end up one step of the series apart, which beats at F Hz.
    */
   function fusedSeries(f0s) {
     const lowest = Math.min.apply(null, f0s);
@@ -190,6 +182,13 @@ SP.optimizer = (function () {
     return { n1: best.n1, ints: best.ints, worst: best.worst, F: lowest / best.n1 };
   }
 
+  /**
+   * Fused mode. Approximate the chord's fundamentals as small integer multiples
+   * n_k of one common fundamental F, then put harmonic n of note k on that
+   * note's own sub-series, at n * n_k * F. Every partial in the chord then lies
+   * on one harmonic series. The fundamentals stay in 12-TET, so each note ends
+   * up a few cents away from its own overtones.
+   */
   function fused(notes, out, maxShift) {
     const f0s = notes.map(fundamental);
     const series = fusedSeries(f0s);
@@ -224,8 +223,8 @@ SP.optimizer = (function () {
 
     smooth(notes, out, maxShift, D);
 
-    // Coordinate descent only accepts improvements, so this should never fire.
-    // It is here because the contract is a promise about the returned chord.
+    // Coordinate descent only accepts improvements, so this is a guard on the
+    // contract rather than an expected path.
     const before = D.total(notes.map((n) => ({ freqs: n.freqs, amps: n.amps })));
     const after = D.total(out.map((freqs, k) => ({ freqs, amps: notes[k].amps })));
     if (!(after <= before)) return notes.map((n) => n.freqs.slice());

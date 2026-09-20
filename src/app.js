@@ -1,9 +1,9 @@
 /*
  * app.js: state, controls, keyboard, MIDI (shell code)
  *
- * Two parameter sets exist at once. `state` is what is sounding. `staged` is
- * the chord being prepared, which the controls and the keyboard edit while the
- * old one keeps playing, until it is played or thrown away.
+ * Two parameter sets exist at once: `state`, which is sounding, and `staged`,
+ * the chord being prepared. The controls and the keyboard edit `staged` while
+ * `state` keeps playing, until the staged chord is played or discarded.
  */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -273,10 +273,34 @@
     drawCurve();
   }
 
+  // ---------------------------------------------------------------- views
+  /** The instrument and the listening test are two views of one page. */
+  function showView(name) {
+    document.body.dataset.view = name;
+    document.querySelectorAll('nav.nav .tab').forEach((t) => t.classList.toggle('on', t.dataset.view === name));
+    $('viewInstrument').classList.toggle('on', name === 'instrument');
+    $('viewListening').classList.toggle('on', name === 'listening');
+    closeInfo();
+    // Silence the instrument so it cannot sound under a trial.
+    if (name === 'listening') SP.audio.suspend();
+    if (location.hash.slice(1) !== name) history.replaceState(null, '', name === 'instrument' ? location.pathname : '#listening');
+  }
+
+  function bindViews() {
+    document.querySelectorAll('nav.nav .tab').forEach((t) => {
+      t.addEventListener('click', () => showView(t.dataset.view));
+    });
+    window.addEventListener('hashchange', () => showView(location.hash === '#listening' ? 'listening' : 'instrument'));
+    if (location.hash === '#listening') showView('listening');
+  }
+
+  const onInstrument = () => document.body.dataset.view === 'instrument';
+
   // ---------------------------------------------------------------- hotkeys
   function bindKeys() {
     window.addEventListener('keydown', (e) => {
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!onInstrument()) return;   // 1 and 2 answer trials on the other view
       if (e.key === '1' || e.key === '2') {
         const want = e.key === '1' ? 'smooth' : 'fused';
         if (punch !== want) { punch = want; update(); }
@@ -408,6 +432,8 @@
   bindControls();
   bindKeys();
   bindInfo();
+  bindViews();
+  SP.experiment.boot();
   update();
   drawCurve();
   const ro = new ResizeObserver(() => { SP.views.spectrum($('spectrum'), last.base, last.shown); drawCurve(); });

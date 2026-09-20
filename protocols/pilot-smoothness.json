@@ -1,0 +1,47 @@
+{
+  "name": "Pilot: does adaptation change what a chord sounds like?",
+  "task": "single",
+  "question": "How many sounds do you hear?",
+  "choices": ["One sound", "Two or more"],
+  "seed": 20260918,
+  "repetitions": 2,
+  "targetLufs": -23,
+  "seconds": 3,
+  "defaults": {
+    "partials": 8,
+    "preset": "organ",
+    "brightness": 55,
+    "maxShift": 0.45,
+    "mode": "off",
+    "consonance": 0
+  },
+  "catch": { "kind": "repeat", "count": 4 },
+  "conditions": [
+    { "id": "maj-plain", "label": "C major triad, plain", "midis": [60, 64, 67] },
+    { "id": "maj-smooth", "label": "C major triad, smooth 100", "midis": [60, 64, 67], "mode": "smooth", "consonance": 100 },
+
+    { "id": "min-plain", "label": "C minor triad, plain", "midis": [60, 63, 67] },
+    { "id": "min-smooth", "label": "C minor triad, smooth 100", "midis": [60, 63, 67], "mode": "smooth", "consonance": 100 },
+
+    { "id": "dom7-plain", "label": "C dominant 7th, plain", "midis": [60, 64, 67, 70] },
+    { "id": "dom7-smooth", "label": "C dominant 7th, smooth 100", "midis": [60, 64, 67, 70], "mode": "smooth", "consonance": 100 },
+
+    { "id": "maj7-plain", "label": "C major 7th, plain", "midis": [60, 64, 67, 71] },
+    { "id": "maj7-smooth", "label": "C major 7th, smooth 100", "midis": [60, 64, 67, 71], "mode": "smooth", "consonance": 100 },
+
+    { "id": "fifth-plain", "label": "Open fifth C4 G4, plain", "midis": [60, 67] },
+    { "id": "fifth-smooth", "label": "Open fifth C4 G4, smooth 100", "midis": [60, 67], "mode": "smooth", "consonance": 100 },
+
+    { "id": "lowthird-plain", "label": "Low minor third C3 Eb3, plain", "midis": [48, 51] },
+    { "id": "lowthird-smooth", "label": "Low minor third C3 Eb3, smooth 100", "midis": [48, 51], "mode": "smooth", "consonance": 100 },
+
+    { "id": "tritone-plain", "label": "Tritone C4 F#4, plain", "midis": [60, 66] },
+    { "id": "tritone-smooth", "label": "Tritone C4 F#4, smooth 100", "midis": [60, 66], "mode": "smooth", "consonance": 100 },
+
+    { "id": "cluster-plain", "label": "Cluster C4 D4 E4, plain", "midis": [60, 62, 64] },
+    { "id": "cluster-smooth", "label": "Cluster C4 D4 E4, smooth 100", "midis": [60, 62, 64], "mode": "smooth", "consonance": 100 },
+
+    { "id": "stack-plain", "label": "Stacked thirds C3 to A4, plain", "midis": [48, 51, 55, 58, 62, 65, 69] },
+    { "id": "stack-smooth", "label": "Stacked thirds C3 to A4, smooth 100", "midis": [48, 51, 55, 58, 62, 65, 69], "mode": "smooth", "consonance": 100 }
+  ]
+}

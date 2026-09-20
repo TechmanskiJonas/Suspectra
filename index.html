@@ -7,16 +7,21 @@
 <title>Suspectra</title>
 <meta name="color-scheme" content="dark">
 <link rel="stylesheet" href="src/style.css">
+<link rel="stylesheet" href="src/experiment.css">
 <!-- BUILD:HEAD-END -->
 </head>
-<body>
+<body data-view="instrument">
 <header>
   <h1>Suspectra</h1>
   <span class="sub">A tool for investigating consonance in 12-TET chords</span>
+  <nav class="nav">
+    <button type="button" class="tab on" data-view="instrument">Instrument</button>
+    <button type="button" class="tab" data-view="listening">Listening test</button>
+  </nav>
   <span class="byline">Jonas Techmanski</span>
 </header>
 
-<main class="page">
+<main class="page view on" id="viewInstrument">
   <section class="card readouts" aria-live="polite" aria-label="Current chord">
     <button type="button" class="primary" id="soundBtn" aria-pressed="false">Start sound</button>
     <div class="readout"><span class="label">Chord</span><span class="value" id="chordOut">–</span></div>
@@ -89,7 +94,7 @@
       </div>
     </div>
     <div class="stagebar" id="stageBar">
-      <span>Editing the next chord. The current one keeps sounding until you play it.</span>
+      <span>Editing the next chord, while the current one keeps sounding.</span>
       <span class="dim"><kbd>Enter</kbd> to play, <kbd>Esc</kbd> to cancel</span>
       <button type="button" class="i" data-info="next" aria-label="About the next chord">i</button>
     </div>
@@ -108,12 +113,87 @@
     <canvas id="curve" role="img" aria-label="Dissonance versus interval in cents with 12-TET semitones marked"></canvas>
   </section>
 </main>
+
+<main class="page narrow view" id="viewListening">
+  <section class="card" aria-labelledby="setupTitle">
+    <div class="cardhead"><h2 id="setupTitle">Protocol</h2></div>
+    <div class="row">
+      <select id="protoPick">
+        <option value="protocols/pilot-smoothness.json">Pilot: one sound or two</option>
+        <option value="protocols/ab-smoothness.json">A/B: which is smoother</option>
+      </select>
+      <label class="filebtn">Open a file<input type="file" id="protoFile" accept=".json,application/json" hidden></label>
+      <span class="dim num" id="protoSource"></span>
+    </div>
+    <p class="hint num" id="protoFacts">loading</p>
+    <p class="hint" id="protoName"></p>
+    <div class="row">
+      <label for="participant">Participant</label>
+      <input type="text" id="participant" placeholder="id or initials" autocomplete="off">
+    </div>
+    <div class="row" id="prepareRow" style="display:none">
+      <button type="button" id="prepareBtn">Render and match stimuli</button>
+      <button type="button" id="startBtn" class="primary" disabled>Start the run</button>
+      <span class="dim num" id="prepareStatus"></span>
+    </div>
+  </section>
+
+  <section class="card" id="checkCard" style="display:none" aria-labelledby="checkTitle">
+    <div class="cardhead"><h2 id="checkTitle">Stimulus check</h2></div>
+    <p class="hint">Loudness before and after matching, the partials found in the rendered file against the partials asked for, and the strongest envelope fluctuation in two bands, 0.3 to 8 Hz and 8 to 40 Hz.</p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Condition</th><th>Notes</th><th>Mode</th>
+            <th>LUFS in</th><th>Gain dB</th><th>LUFS out</th><th>Peak dBFS</th>
+            <th>Partials</th><th>Worst ¢</th><th>Slow Hz</th><th>Fast Hz</th><th>Depth dB</th>
+          </tr>
+        </thead>
+        <tbody id="checkBody"></tbody>
+      </table>
+    </div>
+    <div class="row">
+      <button type="button" id="stimuliBtn">Export stimulus CSV</button>
+      <button type="button" id="wavBtn">Export first WAV</button>
+    </div>
+  </section>
+
+  <section class="card trial" id="trialCard" style="display:none" aria-labelledby="trialTitle">
+    <div class="cardhead">
+      <h2 id="trialTitle">Trial</h2>
+      <span class="dim num" id="progress"></span>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="progressBar"></div></div>
+    <div class="playrow" id="playRow"></div>
+    <p class="question" id="question"></p>
+    <div class="answerrow" id="answerRow"></div>
+  </section>
+
+  <section class="card" id="resultsCard" style="display:none" aria-labelledby="resultsTitle">
+    <div class="cardhead"><h2 id="resultsTitle">Run</h2></div>
+    <p class="hint num" id="resultsFacts"></p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Condition</th><th>Label</th><th>Answers</th><th>Counts</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+    <div class="row"><button type="button" id="responsesBtn" class="primary">Export responses CSV</button></div>
+  </section>
+</main>
+
 <script src="src/dissonance.js"></script>
 <script src="src/optimizer.js"></script>
 <script src="src/timbre.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/views.js"></script>
 <script src="src/tests.js"></script>
+<script src="src/render.js"></script>
+<script src="src/loudness.js"></script>
+<script src="src/analysis.js"></script>
+<script src="src/protocol.js"></script>
+<script src="src/experiment.js"></script>
 <script src="src/app.js"></script>
 <!-- BUILD:CONTENT-END -->
 </body>

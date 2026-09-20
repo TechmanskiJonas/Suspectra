@@ -3,8 +3,8 @@
  * Same design brief as Sonokinetic, in a dark ground: a lab instrument that
  * could sit open on a desk during a meeting. Neutral surfaces, near-white
  * text, one ink accent, plain typographic hierarchy. Monospace is reserved
- * for numbers, where tabular alignment does actual work. Color on the page
- * belongs to the notes; the chrome around them stays grey.
+ * for numbers, where tabular alignment does actual work. Color is reserved
+ * for the notes, and the surrounding interface stays grey.
  */
 
 :root {
@@ -74,6 +74,16 @@ header .sub {
   color: var(--ink-3); font-size: 12.5px;
   font-family: var(--serif); font-style: italic;
 }
+nav.nav { display: flex; gap: 2px; margin-left: 18px; align-self: center; }
+nav.nav .tab {
+  background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  padding: 3px 10px; font-size: 13px; color: var(--ink-3);
+}
+nav.nav .tab:hover { color: var(--ink); background: none; }
+nav.nav .tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+main.view { display: none; }
+main.view.on { display: grid; }
 .byline {
   margin-left: auto; color: var(--ink-3); font-size: 11.5px;
   font-family: var(--serif); font-style: italic;
