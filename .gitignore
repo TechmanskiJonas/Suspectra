@@ -1,2 +1,6 @@
 dist/fragment.html
-.claude/settings.local.json
+
+# local notes and assistant config, kept out of the repo
+HANDOFF.md
+CLAUDE.md
+.claude/

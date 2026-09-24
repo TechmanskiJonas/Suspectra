@@ -6,4 +6,3 @@ Open `index.html` in Chrome. Click keys to toggle notes, or connect a MIDI keybo
 
 - `src/dissonance.js` and `src/optimizer.js` are the research code (in progress).
 - Everything else is the instrument shell.
-- `HANDOFF.md` has the contracts, file map, and project context.
